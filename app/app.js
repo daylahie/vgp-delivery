@@ -1,7 +1,7 @@
 /* Giao VGP – giao diện. Dữ liệu: data/data.json (sinh bởi pipeline/04_build_matrix.py) */
 (function () {
   'use strict';
-  const APP_VERSION = '1.1.0';
+  const APP_VERSION = '1.1.1';
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
   const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd')
@@ -90,6 +90,34 @@
   // ---------- Bản đồ ----------
   const mini = {};
   let full = null, fullData = null;
+
+  // ---------- Vị trí trực tiếp (GPS) ----------
+  // Tự bật khi bắt đầu giao; chấm xanh hiện trên mọi bản đồ. Nút định vị ở bản đồ toàn màn hình để đưa về chỗ mình.
+  let gpsWatch = null, gpsPos = null, gpsCenterNext = false;
+  const allMaps = () => Object.values(mini).concat(full ? [full] : []);
+  function startGps(center) {
+    if (center) gpsCenterNext = true;
+    if (gpsWatch !== null || !('geolocation' in navigator)) { if (center && gpsPos) centerOnMe(); return; }
+    gpsWatch = navigator.geolocation.watchPosition(p => {
+      gpsPos = {lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy};
+      allMaps().forEach(m => m.setGps(gpsPos));
+      if (gpsCenterNext) centerOnMe();
+      $('fullLocate').classList.add('on');
+    }, err => {
+      gpsWatch = null; $('fullLocate').classList.remove('on');
+      if (err.code === 1) toast('Chưa cho phép định vị. Vào Cài đặt iPhone → Safari → Vị trí để bật.', 4000);
+    }, {enableHighAccuracy: true, maximumAge: 3000});
+  }
+  function stopGps() {
+    if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
+    gpsWatch = null; gpsPos = null; $('fullLocate').classList.remove('on');
+    allMaps().forEach(m => m.setGps(null));
+  }
+  function centerOnMe() {
+    gpsCenterNext = false;
+    if (full && $('full').classList.contains('on')) full.centerOn(gpsPos.lat, gpsPos.lon, 1.2);
+  }
+  $('fullLocate').onclick = () => startGps(true);
   function routeData(mode, seq, nextId, doneSet) {
     const P = D.modes[mode].path, legs = [];
     for (let i = 0; i < seq.length - 1; i++) {
@@ -113,6 +141,7 @@
     fullData = data;
     const m = mini[key];
     m.setRoute(data);
+    m.setGps(gpsPos);
     requestAnimationFrame(() => { m.resize(); m.fitRoute(); });
   }
   function openFull(data) {
@@ -120,6 +149,7 @@
     $('full').classList.add('on');
     if (!full) full = new VgpMap($('full'), {interactive: true});
     full.setRoute(data);
+    full.setGps(gpsPos);
     requestAnimationFrame(() => { full.resize(); full.fitRoute(); });
     history.pushState({full: 1}, '');
   }
@@ -270,6 +300,7 @@
   $('bStart').onclick = () => {
     S.trip = {mode: S.route.mode, order: S.route.order.slice(), done: [], started: Date.now(), plan: S.route.cost};
     LS.set('trip', S.trip); renderGo(); document.querySelector('main').scrollTop = 0;
+    startGps(false);
   };
 
   function tripState() {
@@ -353,6 +384,7 @@
       mins: Math.round((Date.now() - T.started) / 60000)});
     S.history = S.history.slice(0, 20); LS.set('history', S.history);
     S.trip = null; LS.del('trip');
+    stopGps();
   }
   function endTrip() {
     const left = S.trip.order.length - S.trip.done.length;
@@ -461,7 +493,7 @@
     if (S.trip && S.trip.order.some(id => !(id in IDX))) { S.trip = null; LS.del('trip'); }
     renderPick();
     $('tripDot').classList.toggle('on', !!S.trip);
-    if (S.trip) { $('tripDot').textContent = S.trip.order.length - S.trip.done.length || '✓'; show('s-go'); }
+    if (S.trip) { $('tripDot').textContent = S.trip.order.length - S.trip.done.length || '✓'; show('s-go'); startGps(false); }
     if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
     setTimeout(checkUpdate, 1500);
   }

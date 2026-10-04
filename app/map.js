@@ -165,7 +165,9 @@
       if (s > 0.45) {
         c.font = `600 ${s > 1.2 ? 13 : 11}px -apple-system,system-ui,sans-serif`;
         c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = C.lbl;
-        for (const b of BASE.buildings) if (b.id) { const [x, y] = this.toScreen(b.c); c.fillText(b.id, x, y); }
+        // tòa đã có ghim trên tuyến thì không in nhãn nền nữa (tránh trùng chữ)
+        const pinned = new Set(this.route ? this.route.stops.map(st => st.id).filter(Boolean) : []);
+        for (const b of BASE.buildings) if (b.id && !pinned.has(b.id)) { const [x, y] = this.toScreen(b.c); c.fillText(b.id, x, y); }
       }
       // lộ trình
       if (this.route) this.renderRoute();

@@ -98,6 +98,10 @@ input:focus{border-color:var(--acc)}
 #full .close{position:absolute;top:calc(14px + var(--safe-t));right:14px;width:46px;height:46px;border-radius:23px;background:var(--card);
   box-shadow:0 2px 10px #0003;display:flex;align-items:center;justify-content:center}
 #full .close svg{width:20px;height:20px}
+#full .locate{position:absolute;right:14px;bottom:calc(24px + var(--safe-b));width:52px;height:52px;border-radius:26px;background:var(--card);
+  box-shadow:0 2px 10px #0003;display:flex;align-items:center;justify-content:center;color:var(--mut)}
+#full .locate.on{color:#0a84ff}
+#full .locate svg{width:24px;height:24px}
 
 /* lộ trình */
 .sum{display:flex;align-items:baseline;gap:8px;margin:2px 2px 14px;flex-wrap:wrap}
@@ -237,7 +241,8 @@ details[open] summary:after{transform:rotate(45deg)}
     <button data-s="s-set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Cài đặt</button>
   </nav>
 </div>
-<div id="full"><button class="close" id="fullClose" aria-label="Đóng bản đồ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div id="full"><button class="close" id="fullClose" aria-label="Đóng bản đồ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <button class="locate" id="fullLocate" aria-label="Vị trí của tôi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3 3 10.5l7.2 2.3L12.5 20z"/></svg></button></div>
 <div id="modal"><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div>
 <script src="solver.js"></script>
