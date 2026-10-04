@@ -63,6 +63,7 @@
       this.el = el;
       this.interactive = opts.interactive !== false;   // bản đồ thu nhỏ: chỉ chạm để mở toàn màn hình
       this.onTap = opts.onTap || null;
+      this.onUserMove = opts.onUserMove || null;   // người dùng tự kéo/chụm bản đồ
       this.cv = document.createElement('canvas');
       el.prepend(this.cv);
       this.ctx = this.cv.getContext('2d');
@@ -265,10 +266,10 @@
         const prev = this.pointers.get(e.pointerId), cur = pos(e);
         this.pointers.set(e.pointerId, cur);
         if (this.pointers.size === 1) {
-          if (Math.hypot(cur[0] - prev[0], cur[1] - prev[1]) > 0) this.moved = true;
+          if (Math.hypot(cur[0] - prev[0], cur[1] - prev[1]) > 0) { this.moved = true; this.onUserMove && this.onUserMove(); }
           this.cx -= (cur[0] - prev[0]) / this.s; this.cy += (cur[1] - prev[1]) / this.s; this.draw();
         } else if (this.pointers.size === 2 && this.pinch) {
-          this.moved = true;
+          this.moved = true; this.onUserMove && this.onUserMove();
           const [a, b] = [...this.pointers.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
           const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
           // dịch theo trung điểm rồi phóng
@@ -289,7 +290,7 @@
       };
       el.addEventListener('pointerup', up);
       el.addEventListener('pointercancel', up);
-      el.addEventListener('wheel', e => { e.preventDefault(); const p = pos(e); this.zoomAt(p[0], p[1], Math.exp(-e.deltaY / 300)); }, {passive: false});
+      el.addEventListener('wheel', e => { e.preventDefault(); this.onUserMove && this.onUserMove(); const p = pos(e); this.zoomAt(p[0], p[1], Math.exp(-e.deltaY / 300)); }, {passive: false});
     }
   }
 

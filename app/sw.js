@@ -1,7 +1,7 @@
 /* Service Worker – cho app chạy offline hoàn toàn sau lần mở đầu.
  * Đổi VER mỗi khi sửa file giao diện để máy tải bản mới.
  * Dữ liệu (data/data.json) nằm ở cache riêng "vgp-data"; app tự kiểm tra phiên bản mới khi có mạng. */
-const VER = '1.1.1';
+const VER = '1.2.0';
 const SHELL = 'vgp-shell-' + VER;
 const DATA = 'vgp-data';
 const FILES = ['./', 'index.html', 'app.js', 'map.js', 'solver.js', 'solver.worker.js', 'manifest.json',

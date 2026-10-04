@@ -100,8 +100,16 @@ input:focus{border-color:var(--acc)}
 #full .close svg{width:20px;height:20px}
 #full .locate{position:absolute;right:14px;bottom:calc(24px + var(--safe-b));width:52px;height:52px;border-radius:26px;background:var(--card);
   box-shadow:0 2px 10px #0003;display:flex;align-items:center;justify-content:center;color:var(--mut)}
-#full .locate.on{color:#0a84ff}
 #full .locate svg{width:24px;height:24px}
+#full .locate svg path{fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+#full .locate.follow{color:#0a84ff}
+#full .locate.follow svg path{fill:currentColor}
+#fullNext{position:absolute;left:14px;top:calc(14px + var(--safe-t));height:46px;max-width:calc(100% - 90px);border-radius:23px;background:var(--card);
+  box-shadow:0 2px 10px #0003;display:none;align-items:center;gap:8px;padding:0 16px 0 14px;font-size:16px;white-space:nowrap}
+#fullNext.on{display:flex}
+#fullNext .lbl{font-size:13px;color:var(--mut)}
+#fullNext b{font-size:18px;color:var(--acc)}
+#fullNext .d{font-size:14px;color:var(--mut)}
 
 /* lộ trình */
 .sum{display:flex;align-items:baseline;gap:8px;margin:2px 2px 14px;flex-wrap:wrap}
@@ -242,7 +250,8 @@ details[open] summary:after{transform:rotate(45deg)}
   </nav>
 </div>
 <div id="full"><button class="close" id="fullClose" aria-label="Đóng bản đồ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-  <button class="locate" id="fullLocate" aria-label="Vị trí của tôi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3 3 10.5l7.2 2.3L12.5 20z"/></svg></button></div>
+  <button class="locate" id="fullLocate" aria-label="Bám theo vị trí của tôi"><svg viewBox="0 0 24 24"><path d="M20 4 4 10.8l6.6 2.1 2.2 6.9z"/></svg></button>
+  <button id="fullNext" aria-label="Xem tòa tiếp theo"></button></div>
 <div id="modal"><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div>
 <script src="solver.js"></script>
