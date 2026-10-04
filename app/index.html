@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Giao VGP</title>
+<meta name="description" content="Lộ trình giao hàng ngắn nhất trong Vinhomes Grand Park – chạy offline">
+<meta name="theme-color" content="#0a66d8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Giao VGP">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root{
+  --bg:#f2f2f7;--card:#fff;--fg:#1c1c1e;--mut:#6e6e73;--line:#d1d1d6;--acc:#0a66d8;--acc-fg:#fff;
+  --ok:#1f9d4a;--warn:#ff9500;--bad:#d70015;--depot:#c2185b;--sel:#e5efff;
+  --map-bg:#eef0f3;--map-road:#ffffff;--map-road-edge:#c9ccd2;--map-major:#ffe7a6;--map-walk:#9bc59d;
+  --map-bld:#d9dbe1;--map-bld-edge:#bfc2c9;--map-lbl:#3a3a3c;--map-bnd:#f0b400;--route:#0a66d8;--route-done:#9aa0a6;
+  --safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#000;--card:#1c1c1e;--fg:#f2f2f7;--mut:#98989f;--line:#38383a;--acc:#3d8bff;--sel:#1b2a44;
+  --map-bg:#15171a;--map-road:#3a3d42;--map-road-edge:#25272b;--map-major:#6b5a2b;--map-walk:#35573a;
+  --map-bld:#2b2e33;--map-bld-edge:#3c4047;--map-lbl:#d7d9de;--map-bnd:#b58a00;--route:#4c9bff;--route-done:#5f6368;
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+  font:17px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;overscroll-behavior:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none;padding:0}
+#app{display:flex;flex-direction:column;height:100%;padding-top:var(--safe-t)}
+main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+.screen{display:none;padding:12px 12px 24px}.screen.on{display:block}
+#s-route.on,#s-trip.on{padding-bottom:12px}
+
+/* thanh tab dưới */
+nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:var(--safe-b)}
+nav button{flex:1;padding:8px 0 6px;font-size:12px;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button svg{width:26px;height:26px}
+nav button.on{color:var(--acc)}
+nav .badge{font-size:10px;background:var(--bad);color:#fff;border-radius:8px;padding:0 5px;margin-left:2px}
+
+h1{font-size:22px;margin:4px 4px 10px}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.mut{color:var(--mut);font-size:14px}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;padding:10px 14px;
+  background:var(--card);border:1px solid var(--line);font-weight:600;min-height:44px}
+.btn.pri{background:var(--acc);color:var(--acc-fg);border-color:var(--acc)}
+.btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.btn.big{width:100%;min-height:60px;font-size:20px;border-radius:16px}
+.btn:disabled{opacity:.45}
+.seg{display:flex;background:var(--line);border-radius:11px;padding:2px}
+.seg button{flex:1;padding:8px 6px;border-radius:9px;font-weight:600;font-size:15px;min-height:40px}
+.seg button.on{background:var(--card);box-shadow:0 1px 3px #0003}
+input[type=search],input[type=number],input[type=text]{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px}
+.chip{white-space:nowrap;border:1px solid var(--line);background:var(--card);border-radius:18px;padding:7px 12px;font-size:15px}
+.chip.del{color:var(--bad)}
+
+/* danh sách tòa */
+.zone{background:var(--card);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.zone-h{display:flex;align-items:center;gap:8px;padding:12px 14px;font-weight:600}
+.zone-h .cnt{color:var(--mut);font-weight:400;font-size:14px}
+.zone-h .all{margin-left:auto;color:var(--acc);font-size:15px;font-weight:600;padding:6px 4px}
+.zone-h .car{transition:transform .15s;color:var(--mut)}
+.zone.closed .car{transform:rotate(-90deg)}.zone.closed .items{display:none}
+.item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);min-height:52px}
+.item .id{font-weight:700;font-size:18px}
+.item .nm{font-size:13px;color:var(--mut)}
+.ck{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center}
+.item.on .ck{background:var(--acc);border-color:var(--acc)}
+.item.on .ck:after{content:"";width:8px;height:14px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-2px)}
+.dock{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 22%);padding:16px 0 4px;margin-top:6px}
+
+/* bản đồ */
+.mapbox{position:relative;height:44vh;min-height:260px;border-radius:14px;overflow:hidden;margin-bottom:12px;background:var(--map-bg);touch-action:none}
+.mapbox canvas{width:100%;height:100%;display:block}
+.mapbtns{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:8px}
+.mapbtns button{width:42px;height:42px;border-radius:21px;background:var(--card);box-shadow:0 1px 6px #0004;font-size:19px;display:flex;align-items:center;justify-content:center}
+.mapbtns button.on{color:var(--acc)}
+.legend{position:absolute;left:8px;bottom:8px;background:var(--card);opacity:.92;border-radius:10px;padding:4px 8px;font-size:12px;color:var(--mut)}
+
+/* kết quả */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats b{display:block;font-size:24px}
+.stats span{font-size:13px;color:var(--mut)}
+.stop{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.stop:first-child{border-top:none}
+.num{width:32px;height:32px;border-radius:50%;background:var(--route);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;font-size:15px}
+.num.dep{background:var(--depot)}.num.done{background:var(--route-done)}
+.stop .leg{margin-left:auto;color:var(--mut);font-size:14px;white-space:nowrap}
+.stop.done .id{text-decoration:line-through;color:var(--mut)}
+
+/* đang giao */
+.next{text-align:center;padding:18px 14px}
+.next .lbl{font-size:15px;color:var(--mut)}
+.next .big{font-size:56px;font-weight:800;letter-spacing:-1px;line-height:1.1;margin:4px 0}
+.next .sub{font-size:16px;color:var(--mut)}
+.next .note{margin-top:8px;font-size:15px;background:var(--sel);border-radius:10px;padding:8px}
+.prog{height:10px;background:var(--line);border-radius:5px;overflow:hidden;margin:6px 0 2px}
+.prog i{display:block;height:100%;background:var(--ok);transition:width .2s}
+.empty{text-align:center;padding:40px 16px;color:var(--mut)}
+
+/* cài đặt */
+.set{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.set:first-child{border-top:none}
+.set label{flex:1}
+.set input{width:110px;text-align:right}
+
+/* hộp thoại */
+#modal{position:fixed;inset:0;background:#0006;display:none;align-items:flex-end;justify-content:center;z-index:50}
+#modal.on{display:flex}
+#modal .sheet{background:var(--card);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + var(--safe-b))}
+#modal h3{margin:0 0 10px}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + var(--safe-b));background:#1c1c1ee6;color:#fff;
+  padding:10px 16px;border-radius:12px;font-size:15px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60;max-width:90%;text-align:center}
+#toast.on{opacity:1}
+#update{display:none;background:var(--acc);color:#fff;padding:10px 14px;font-size:15px;text-align:center}
+#update.on{display:block}
+@media (min-width:760px){main{max-width:720px;margin:0 auto;width:100%}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="update"></div>
+  <main>
+    <!-- 1. CHỌN TÒA -->
+    <section class="screen on" id="s-pick">
+      <h1>Chọn tòa cần giao</h1>
+      <input type="search" id="q" placeholder="Tìm mã tòa, vd. S3.03, GH2, Masteri A" autocomplete="off" autocorrect="off" autocapitalize="characters">
+      <div class="row" style="margin:10px 2px 6px">
+        <div class="grow"><b id="selCount">0</b> <span class="mut">tòa đã chọn · xuất phát <b id="depotName"></b></span></div>
+        <button class="chip" id="bClear">Bỏ chọn</button>
+      </div>
+      <div class="chips" id="presets"></div>
+      <div id="zones"></div>
+      <div class="dock">
+        <div class="seg" id="modePick" style="margin-bottom:8px">
+          <button data-m="moto" class="on">🛵 Xe máy</button><button data-m="walk">🚶 Đi bộ</button>
+        </div>
+        <button class="btn pri big" id="bSolve" disabled>Tính lộ trình</button>
+      </div>
+    </section>
+
+    <!-- 2. KẾT QUẢ -->
+    <section class="screen" id="s-route">
+      <div id="routeEmpty" class="empty">Chưa có lộ trình.<br>Chọn tòa rồi bấm “Tính lộ trình”.</div>
+      <div id="routeBody" style="display:none">
+        <div class="seg" id="modeRoute" style="margin-bottom:10px">
+          <button data-m="moto">🛵 Xe máy</button><button data-m="walk">🚶 Đi bộ</button>
+        </div>
+        <div class="card stats">
+          <div><b id="rDist">–</b><span>quãng đường</span></div>
+          <div><b id="rTime">–</b><span>ước tính</span></div>
+          <div><b id="rStops">–</b><span>điểm giao</span></div>
+        </div>
+        <div class="mapbox" id="mapRoute"></div>
+        <button class="btn ok big" id="bStart">Bắt đầu giao</button>
+        <div class="card" style="margin-top:12px" id="routeList"></div>
+        <div class="mut" id="routeInfo" style="text-align:center"></div>
+      </div>
+    </section>
+
+    <!-- 3. ĐANG GIAO -->
+    <section class="screen" id="s-trip">
+      <div id="tripEmpty" class="empty">Chưa có chuyến đang giao.</div>
+      <div id="tripBody" style="display:none">
+        <div class="row"><div class="grow"><b id="tProg">0/0</b> <span class="mut">đã giao</span></div><span class="mut" id="tLeft"></span></div>
+        <div class="prog"><i id="tBar" style="width:0"></i></div>
+        <div class="card next" id="tNext"></div>
+        <button class="btn ok big" id="bDone">✓ Đã giao</button>
+        <div class="row" style="gap:8px;margin:10px 0 12px">
+          <button class="btn grow" id="bUndo">↶ Hoàn tác</button>
+          <button class="btn grow" id="bReplan">⟳ Tính lại</button>
+        </div>
+        <div class="mapbox" id="mapTrip"></div>
+        <div class="card" id="tripList"></div>
+        <button class="btn" id="bEnd" style="width:100%;color:var(--bad)">Kết thúc chuyến</button>
+      </div>
+    </section>
+
+    <!-- 4. CÀI ĐẶT -->
+    <section class="screen" id="s-set">
+      <h1>Cài đặt</h1>
+      <div class="card">
+        <div class="set"><label for="spMoto">Tốc độ xe máy (km/h)</label><input type="number" id="spMoto" min="3" max="60" step="1" inputmode="decimal"></div>
+        <div class="set"><label for="spWalk">Tốc độ đi bộ (km/h)</label><input type="number" id="spWalk" min="1" max="10" step="0.5" inputmode="decimal"></div>
+        <div class="set"><label for="stopMin">Thời gian dừng mỗi sảnh (phút)</label><input type="number" id="stopMin" min="0" max="30" step="0.5" inputmode="decimal"></div>
+      </div>
+      <div class="card">
+        <b>Nhóm tòa đã lưu</b>
+        <div class="mut" style="margin:4px 0 8px">Lưu ra file để phòng iPhone xoá dữ liệu app khi lâu không mở.</div>
+        <div class="row" style="gap:8px"><button class="btn grow" id="bExport">Xuất file</button><button class="btn grow" id="bImport">Nhập file</button></div>
+        <input type="file" id="fImport" accept=".json,application/json" hidden>
+      </div>
+      <div class="card"><b>Lịch sử chuyến gần nhất</b><div id="history" class="mut" style="margin-top:6px"></div></div>
+      <div class="card">
+        <b>Dữ liệu</b>
+        <div class="mut" id="dataInfo" style="margin:4px 0 8px"></div>
+        <button class="btn" id="bBench" style="width:100%">Kiểm tra tốc độ tính (toàn khu)</button>
+        <div class="mut" id="benchOut" style="margin-top:6px"></div>
+      </div>
+      <div class="card"><button class="btn" id="bReset" style="width:100%;color:var(--bad)">Xoá dữ liệu lưu trên máy</button></div>
+      <div class="mut" style="text-align:center" id="appVer"></div>
+    </section>
+  </main>
+
+  <nav>
+    <button data-s="s-pick" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/></svg>Chọn tòa</button>
+    <button data-s="s-route"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/></svg>Lộ trình</button>
+    <button data-s="s-trip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Đang giao<span id="tripBadge"></span></span></button>
+    <button data-s="s-set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Cài đặt</button>
+  </nav>
+</div>
+<div id="modal"><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+<script src="solver.js"></script>
+<script src="map.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

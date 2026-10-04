@@ -1,0 +1,15 @@
+{
+  "_huong_dan": [
+    "File hiệu chỉnh mạng đường. Cách dễ nhất: mở raw/graph_preview.html, bấm vào đường để chặn/đổi chiều,",
+    "hoặc vẽ lối tắt, rồi bấm 'Tải overrides.json' và chép đè file này.",
+    "allow_ways: danh sách mã way OSM cho phép đi bất kể tag (private, đang thi công...).",
+    "oneway_overrides: {\"mã way\": \"yes\" | \"-1\" | \"no\"} – yes = một chiều theo hướng vẽ, -1 = ngược lại, no = hai chiều.",
+    "block_edges: [{\"at\": [lat, lon], \"mode\": \"moto|walk|both\", \"note\": \"...\"}] chặn đoạn gần điểm,",
+    "             hoặc {\"way\": mã, \"mode\": ...} chặn cả đường.",
+    "add_edges: [{\"coords\": [[lat, lon], ...], \"mode\": \"moto|walk|both\", \"oneway\": false, \"note\": \"...\"}]"
+  ],
+  "allow_ways": [],
+  "oneway_overrides": {},
+  "block_edges": [],
+  "add_edges": []
+}

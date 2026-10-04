@@ -1,0 +1,25 @@
+DANH MỤC ĐIỂM GIAO – 2026-10-04 03:48
+
+Tổng số điểm trong buildings.csv: 70 (cao tầng 70, thấp tầng 0)
+Giữ nguyên từ lần trước (đã kiểm tra / chỉnh tay): 0
+
+Nguồn sảnh nháp của các tòa từ OSM:
+  - điểm OSM ghi rõ 'Sảnh': 2 → S3.01, S3.02
+  - điểm 'Tòa X' sát mép tòa / tòa chỉ có điểm: 31 → LUM-A, LUM-B, LUM-C, MCP-A, MCP-D, MCP-E, S1.01, S1.02, S1.03, S1.06, S2.01, S2.02, S2.03, S2.05, S3.03, S3.05, S6.01, S6.02, S6.03, S6.05, S6.06, S7.02, S7.03, S7.05, S8.01, S8.02, S8.03, S9.01, S9.02, S9.03, S10.01
+  - ước lượng (mép tòa gần đường): 37 → BE1, BE2, BE3, BE5, BE6, BE7, BS7, BS8, BS9, BS10, BS11, BS12, BS15, BS16, GH1, GH2, GH3, GH5, GH6, LUM-D, LUM-E, MCP-B, MCP-C, OS1, OS2, OS3, OS5, S1.05, S1.07, S5.01, S5.03, S7.01, S10.02, S10.03, S10.05, S10.06, S10.07
+
+Theo phân khu:
+  - Glory Heights: 5
+  - Lumière Boulevard: 5
+  - Masteri Centre Point: 5
+  - The Beverly: 6
+  - The Beverly Solari: 8
+  - The Oasis: 4
+  - The Origami: 21
+  - The Rainbow: 16
+
+Cảnh báo sảnh xa đường > 50 m: 0
+
+Khối nhà có tên nhưng không nhận ra mã (không đưa vào danh mục): 2
+  - Trường mầm non Vinschool
+  - Vincom Mega Mall

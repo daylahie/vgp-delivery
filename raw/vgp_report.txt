@@ -1,0 +1,200 @@
+BÁO CÁO DỮ LIỆU OSM – VINHOMES GRAND PARK
+Tạo lúc: 2026-10-03 19:46
+Khung bao: lat 10.828–10.86, lon 106.82–106.86
+Dữ liệu OSM tính đến: 2026-10-03T19:35:51Z
+
+============================================================
+1. ĐƯỜNG: 1338 đoạn (way)
+============================================================
+Loại highway           Số đoạn  Dài (km)  Nhóm
+residential                721    103.99  xe máy + đi bộ
+service                    294     26.85  xe máy + đi bộ
+footway                    186     28.31  chỉ đi bộ
+track                       57     16.10  KHÁC – cần xem
+secondary                   31     11.91  xe máy + đi bộ
+tertiary                    21      8.63  xe máy + đi bộ
+construction                14     15.73  KHÁC – cần xem
+tertiary_link                3      0.36  xe máy + đi bộ
+unclassified                 2      1.10  xe máy + đi bộ
+living_street                2      0.32  xe máy + đi bộ
+motorway                     2     17.13  KHÁC – cần xem
+proposed                     2     11.28  KHÁC – cần xem
+path                         2      0.13  chỉ đi bộ
+secondary_link               1      0.17  xe máy + đi bộ
+
+Đường một chiều (oneway / bùng binh): 121 đoạn
+   - residential: 69
+   - secondary: 16
+   - tertiary: 13
+   - construction: 11
+   - service: 6
+   - motorway: 2
+   - proposed: 2
+   - secondary_link: 1
+   - tertiary_link: 1
+Đoạn bị cấm (access/motorcycle/motor_vehicle = no/private): 70
+   - way 32585340: service  access=private motorcycle=-
+   - way 32586953: service  access=private motorcycle=-
+   - way 331790896: unclassified  access=private motorcycle=-
+   - way 331790897: track  access=private motorcycle=-
+   - way 331790916: track  access=private motorcycle=-
+   - way 331790930: track  access=private motorcycle=-
+   - way 331956142: track  access=private motorcycle=-
+   - way 331956143: track  access=private motorcycle=-
+   - way 331956146: track  access=private motorcycle=-
+   - way 331956148: track  access=private motorcycle=-
+   - way 331956149: track  access=private motorcycle=-
+   - way 332003115: track  access=private motorcycle=-
+   - way 332003116: track  access=private motorcycle=-
+   - way 332003125: track  access=private motorcycle=-
+   - way 332003126: service  access=private motorcycle=-
+   - way 332003135: track  access=private motorcycle=-
+   - way 332003136: track  access=private motorcycle=-
+   - way 332003154: track  access=private motorcycle=-
+   - way 332003155: track  access=private motorcycle=-
+   - way 332003165: track  access=private motorcycle=-
+   - way 332003173: track  access=private motorcycle=-
+   - way 332003176: track  access=private motorcycle=-
+   - way 332003177: service  access=private motorcycle=-
+   - way 332003179: track  access=private motorcycle=-
+   - way 332003181: track  access=private motorcycle=-
+   - way 332003184: track  access=private motorcycle=-
+   - way 332139486: track  access=private motorcycle=-
+   - way 332139505: track  access=private motorcycle=-
+   - way 332139511: track  access=private motorcycle=-
+   - way 332139514: track  access=private motorcycle=-
+Tên đường có trong dữ liệu (188): Bùi Quốc Khái, Cầu Gò Công, Cầu Long Đại, Cầu Rạch Hầm, Cầu Vồng, Cầu cạn Đường vành đai 3 Thành phố Hồ Chí Minh, Hẻm 1011 Nguyễn Xiển, Hẻm 108 Đường Số 6, Hẻm 113 Đường Số 6, Hẻm 116 Đường Số 17, Hẻm 118 Đường Số 6, Hẻm 123 Đường Số 6, Hẻm 125 Đường Số 6, Hẻm 127 Đường Số 6, Hẻm 129 Đường Số 6, Hẻm 14 Đường Số 4, Hẻm 144 Đường Số 17, Hẻm 15 Đường Số 21, Hẻm 15 Đường Số 33, Hẻm 16 Đường Số 9, Hẻm 17, Hẻm 17 Đường Trường Hanh, Hẻm 18, Hẻm 18 Đường Số 8, Hẻm 2 Đường Số 8, Hẻm 20 Đường Phước Thiện, Hẻm 20 Đường số 16, Hẻm 219 Đường Nguyễn Văn Tăng, Hẻm 23 Đường số 15, Hẻm 243 Nguyễn Văn Tăng, Hẻm 249 Nguyễn Văn Tăng, Hẻm 26 Đường số 15, Hẻm 27, Hẻm 27 Đường Nguyễn Xiển, Hẻm 270, Hẻm 275, Hẻm 275/30 Đường Phước Thiện, Hẻm 28 Đường Số 29, Hẻm 289 Đường Phước Thiện, Hẻm 291 Đường Phước Thiện, Hẻm 299 Đường Phước Thiện, Hẻm 3 Đường Số 16, Hẻm 306, Hẻm 321 Đường Phước Thiện, Hẻm 34, Hẻm 348 Đường Nguyễn Văn Tăng, Hẻm 35 Đường Số 6, Hẻm 39, Hẻm 39 Đường Số 8, Hẻm 408 Đường Nguyễn Xiển, Hẻm 435 Nguyễn Văn Tăng, Hẻm 442 Nguyễn Xiển, Hẻm 448 Đường Nguyễn Văn Tăng, Hẻm 499, Hẻm 5 Đường Số 19, Hẻm 545, Hẻm 6 Đường Số 31, Hẻm 606 Đường Nguyễn Xiển, Hẻm 630 Đường Nguyễn Xiển, Hẻm 662 Đường Nguyễn Xiển, Hẻm 694 Đường Nguyễn Xiển, Hẻm 74 Đường Số 20, Hẻm 769 Nguyễn Xiển, Hẻm 805, Hẻm 817, Hẻm 863 Nguyễn Xiển, Hẻm 894, Hẻm 894 Nguyễn Xiển, Hẻm 894 Đường Nguyễn Xiển, Hẻm 903, Hẻm 920 Đường Nguyễn Xiển, Hẻm 93 Đường Số 24, Hẻm 938 Đường Nguyễn Xiển, Hẻm 99 Đường Số 6, Long Phước, Làm viên, Masteri Centre Point, Nguyễn Văn Tăng, Nguyễn Xiển, Phan Đạt Đức
+
+============================================================
+2. TÒA NHÀ: 120 đối tượng – có tên/mã: 86, không tên: 34
+============================================================
+Theo loại building: apartments=75, yes=34, house=4, roof=3, school=2, kindergarten=1, building:part=1
+Theo kiểu OSM: way=113, node=5, relation=2
+Có số tầng (building:levels): 38
+Tòa cao ≥10 tầng: 34 (trong đó không tên: 0)
+
+Mã tòa nhận diện được: 60
+   [BE] (6): BE1, BE2, BE3, BE5, BE6, BE7
+   [BS] (8): BS7, BS8, BS9, BS10, BS11, BS12, BS15, BS16
+   [GH] (5): GH1, GH2, GH3, GH5, GH6
+   [OS] (4): OS1, OS2, OS3, OS5
+   [S] (37): S1.01, S1.02, S1.03, S1.05, S1.06, S1.07, S2.01, S2.02, S2.03, S2.05, S3.01, S3.02, S3.03, S3.05, S5.01, S5.03, S6.01, S6.02, S6.03, S6.05, S6.06, S7.01, S7.02, S7.03, S7.05, S8.01, S8.02, S8.03, S9.01, S9.02, S9.03, S10.01, S10.02, S10.03, S10.05, S10.06, S10.07
+Mã xuất hiện ở nhiều đối tượng (có thể là building:part hoặc trùng): S3.01×3, S3.02×3, S3.03×2, S3.05×2
+
+Tên không khớp mẫu mã tòa (22):
+   - way 1550121709: '38/16'  (building=house)
+   - way 1550122292: '38/16/10'  (building=house)
+   - way 1547927241: '38/16/12'  (building=house)
+   - way 1550122476: '38/16/1J'  (building=house)
+   - node 11811148772: 'Gong Cha'  (building=apartments)
+   - way 1308941544: 'Lumière Boulevard - Tower A'  (building=apartments)
+   - way 1223353340: 'Lumière Boulevard - Tower D'  (building=apartments)
+   - way 1308941543: 'Lumière Boulevard, Tower E'  (building=apartments)
+   - way 1223137339: 'Masteri Centre Point - Tower A'  (building=apartments)
+   - way 1308941553: 'Masteri Centre Point - Tower B'  (building=apartments)
+   - way 1308941542: 'Masteri Centre Point - Tower D'  (building=apartments)
+   - way 1243138600: 'Masteri Centre Point - Tower E'  (building=apartments)
+   - way 723883058: 'Petrolimex'  (building=roof)
+   - way 1223402501: 'Tower B'  (building=apartments)
+   - way 1223402502: 'Tower C'  (building=apartments)
+   - way 1224010370: 'Tower C'  (building=apartments)
+   - way 1222384178: 'Trường mầm non Vinschool'  (building=kindergarten)
+   - way 1115566351: 'Vincom Mega Mall'  (building=yes)
+   - way 832342508: 'Đình Long Hòa'  (building=yes)
+   - way 32577786: 'Đình thần Long Đại'  (building=yes)
+   - way 32588872: 'Đình thần Phước Thiện'  (building=yes)
+   - way 561802036: 'Ủy ban nhân dân phường Long Bình'  (building=yes)
+
+============================================================
+3. ĐIỂM XUẤT PHÁT S3.03
+============================================================
+TÌM THẤY S3.03: 3 đối tượng
+   - node 11341398836 tại 10.838550,106.834645 tags={'addr:city': 'Thành phố Thủ Đức', 'addr:district': 'Phường Long Bình', 'addr:housenumber': '512 Nguyễn Xiển', 'addr:postcode': '71217', 'addr:province': 'Thành phố Hồ Chí Minh', 'addr:street': 'Đường Cầu Vồng', 'addr:subdistrict': 'Khu phố 9', 'amenity': 'parking', 'building': 'apartments', 'building:levels': '35', 'fee': 'yes', 'layer': '-2', 'name': 'Hầm xe Tòa nhà S3.03 S3.05 phân khu Rainbow', 'operator': 'Tập đoàn Vingroup', 'parking': 'underground'}
+   - way 1223235999 tại 10.838844,106.834852 tags={'addr:city': 'Thành phố Thủ Đức', 'addr:district': 'Phường Long Bình', 'addr:housenumber': '512 Nguyễn Xiển', 'addr:postcode': '71217', 'addr:province': 'Hồ Chí Minh', 'addr:street': 'Đường Cầu Vồng', 'addr:subdistrict': 'Khu phố 9', 'building': 'apartments', 'building:levels': '25', 'name': 'Tòa nhà S3.03 phân khu Rainbow đại đô thị Vinhomes Grand Park', 'operator': 'Tập đoàn Vingroup'}
+   - node 11240798457 tại 10.838750,106.834713 tags={'addr:city': 'Thành phố Thủ Đức', 'addr:province': 'Hồ Chí Minh', 'addr:street': 'Đường Nguyễn Xiển – Long Phước', 'addr:subdistrict': 'Long Thạnh Mỹ', 'landuse': 'residential', 'name': 'Tòa S303 Vinhome Grand Park', 'operator': 'Vinhome Grand Park', 'residential': 'apartments'}
+
+============================================================
+4. LỐI VÀO (entrance): 0 node
+============================================================
+Theo loại: 
+
+============================================================
+5. KHU VỰC / PHÂN KHU có tên: 44
+============================================================
+   - way 1308943354: 'Beverly' landuse=residential place=-
+   - node 9593578326: 'GS25 - S107 Vinhomes Grand Park' landuse=residential place=-
+   - way 1218211272: 'Lumière Boulevard - Masterise Homes' landuse=residential place=-
+   - node 11290292876: 'Lumière Boulevard - Tower A' landuse=residential place=-
+   - node 11290292875: 'Lumière Boulevard - Tower B' landuse=residential place=-
+   - node 11290292874: 'Lumière Boulevard - Tower C' landuse=residential place=-
+   - node 11290292877: 'Lumière Boulevard, Tower E' landuse=residential place=-
+   - way 1218211271: 'Masteri Center Point - Masterise Homes' landuse=residential place=-
+   - node 11288134702: 'Masteri Centre Point - Tower A' landuse=residential place=-
+   - node 11290292878: 'Masteri Centre Point - Tower B' landuse=residential place=-
+   - node 11290292870: 'Masteri Centre Point - Tower C' landuse=residential place=-
+   - node 11290292871: 'Masteri Centre Point - Tower D' landuse=residential place=-
+   - node 11290292873: 'Masteri Centre Point - Tower E' landuse=residential place=-
+   - way 1308749597: 'Quảng trường Eagle' landuse=- place=square
+   - way 1237984593: 'The Oasis' landuse=residential place=-
+   - way 1115566352: 'The Opus One' landuse=residential place=-
+   - node 9593578325: 'Tòa Nhà S2.01 - Vinhomes Grand Park' landuse=residential place=-
+   - node 11240854794: 'Tòa S1.01 Vinhome Grand Park' landuse=residential place=-
+   - node 11240854793: 'Tòa S1.02 Vinhome Grand Park' landuse=residential place=-
+   - node 11240854792: 'Tòa S1.03 Vinhome Grand Park' landuse=residential place=-
+   - node 11240854795: 'Tòa S1.06' landuse=residential place=-
+   - node 11240854791: 'Tòa S1.06 Vinhome Grand Park' landuse=residential place=-
+   - node 11337032768: 'Tòa S10.01' landuse=residential place=-
+   - node 11240854790: 'Tòa S2.03 Vinhome Grand Park' landuse=residential place=-
+   - node 11240854789: 'Tòa S2.05 Vinhome Grand Park' landuse=residential place=-
+   - node 11240854788: 'Tòa S202 Vinhome Grand Park' landuse=residential place=-
+   - node 11240854798: 'Tòa S3.05 Vinhome Grand Park' landuse=residential place=-
+   - node 11240798457: 'Tòa S303 Vinhome Grand Park' landuse=residential place=-
+   - node 11337032749: 'Tòa S6.01' landuse=residential place=-
+   - node 11337032750: 'Tòa S6.02' landuse=residential place=-
+   - node 11337032751: 'Tòa S6.03' landuse=residential place=-
+   - node 11337032752: 'Tòa S6.05' landuse=residential place=-
+   - node 11337032753: 'Tòa S6.06' landuse=residential place=-
+   - node 11337032757: 'Tòa S7.02' landuse=residential place=-
+   - node 11337032758: 'Tòa S7.03' landuse=residential place=-
+   - node 11337032759: 'Tòa S7.05' landuse=residential place=-
+   - node 11337032760: 'Tòa S8.01' landuse=residential place=-
+   - node 11337032761: 'Tòa S8.02' landuse=residential place=-
+   - node 11337032762: 'Tòa S8.03' landuse=residential place=-
+   - node 11337032763: 'Tòa S9.01' landuse=residential place=-
+   - node 11337032764: 'Tòa S9.02' landuse=residential place=-
+   - node 11337032765: 'Tòa S9.03' landuse=residential place=-
+   - way 1223373335: 'Vinhomes Grand Park' landuse=residential place=-
+   - node 9593946638: 'Vinhomes Grand Park Quận 9' landuse=residential place=-
+Đối tượng mang tên Vinhomes/Grand Park: 51
+   - node 9593578325: 'Tòa Nhà S2.01 - Vinhomes Grand Park'
+   - node 9593578326: 'GS25 - S107 Vinhomes Grand Park'
+   - node 9593946638: 'Vinhomes Grand Park Quận 9'
+   - node 11240798457: 'Tòa S303 Vinhome Grand Park'
+   - node 11240854788: 'Tòa S202 Vinhome Grand Park'
+   - node 11240854789: 'Tòa S2.05 Vinhome Grand Park'
+   - node 11240854790: 'Tòa S2.03 Vinhome Grand Park'
+   - node 11240854791: 'Tòa S1.06 Vinhome Grand Park'
+   - node 11240854792: 'Tòa S1.03 Vinhome Grand Park'
+   - node 11240854793: 'Tòa S1.02 Vinhome Grand Park'
+   - node 11240854794: 'Tòa S1.01 Vinhome Grand Park'
+   - node 11240854798: 'Tòa S3.05 Vinhome Grand Park'
+   - way 1223373335: 'Vinhomes Grand Park'
+   - node 8614186152: 'Vinhomes Grand Park'
+   - node 11152431366: 'King Food Mart - S10.02 Vinhomes Grand Park'
+   - node 11345881263: 'ACB Lite - Vinhomes Grand Park'
+   - node 11518120253: 'Vinhomes Grand Park, Toà BS15- The Beverly Solari, 88 phước Thiện, P. long bình, quận Thủ đức,'
+   - node 11548458597: 'Số nhà ST18-34 Vinhome Grand Park, Toà nhà The Manhattan Vinhomes Grand Park,'
+   - node 11553081484: 'Toà BS16 vinhome grand park,'
+   - node 11715628107: 'Tòa bs15 oasis Beverly solary. Vinhome Grand Park quan 9, Phường Long Thạnh Mỹ, Quận 9, Thành phố Hồ Chí Minh'
+   - node 11715667849: 'Masteri Central Point, Lo A, A18-12. p Long Thạnh Mỹ, đường Nguyễn Xiển Khu Vinhomes Grand Park Q9., Phường Long Thạnh Mỹ, Quận 9, Thành phố Hồ Chí Minh'
+   - node 11782027905: 'S2-02 Vinhome grand park, Nguyễn Xiển,'
+   - node 11801221039: 'Vinhomes Grand Park, T16-40 manhattan,'
+   - node 11811148400: 'BreadTalk Vinhomes Grand Park'
+   - node 11868700590: 'Vinhomes Grand Park'
+   - node 12241505436: 'Công viên 36 hecta Vinhome Grand Park'
+   - node 12777641246: 'Công viên nước Grand Park'
+   - node 13130079991: 'toà s3-01, vinhome grand park, nguyễn xiển,'
+   - node 13143495941: 's1.07 vinhomes gran park,'
+   - node 13144517579: 's107 vinhomes grand park,'
+
+Phần tử khác (POI có tên, v.v.): 45

@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VGP – Ghim sảnh giao hàng</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="editor_context.js"></script>
+<style>
+ :root{--bg:#fff;--fg:#1d1d1f;--mut:#6e6e73;--line:#d2d2d7;--sel:#e8f0fe;--acc:#0a66d8}
+ @media (prefers-color-scheme:dark){:root{--bg:#1c1c1e;--fg:#f2f2f7;--mut:#a1a1a6;--line:#3a3a3c;--sel:#203350;--acc:#4c9bff}}
+ *{box-sizing:border-box}
+ html,body{margin:0;height:100%;font:14px -apple-system,system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+ #app{display:flex;height:100%}
+ #map{flex:1;min-width:0}
+ #side{width:380px;display:flex;flex-direction:column;border-left:1px solid var(--line)}
+ .bar{padding:8px 10px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+ button,select,input,textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+ button{cursor:pointer}button:hover{border-color:var(--acc)}
+ button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}
+ button.on{background:#ff9500;color:#fff;border-color:#ff9500}
+ .prog{font-weight:600}.mut{color:var(--mut);font-size:12px}
+ #list{flex:1;overflow:auto;min-height:120px}
+ .row{display:flex;gap:8px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line);cursor:pointer}
+ .row:hover{background:var(--sel)}.row.sel{background:var(--sel);font-weight:600}
+ .dot{width:12px;height:12px;border-radius:50%;flex:none;border:2px solid #fff;box-shadow:0 0 0 1px #0004}
+ .row .z{margin-left:auto;color:var(--mut);font-size:12px;font-weight:400}
+ #form{border-top:2px solid var(--line);padding:10px;max-height:52%;overflow:auto}
+ #form label{display:block;font-size:12px;color:var(--mut);margin-top:6px}
+ #form input,#form select,#form textarea{width:100%}
+ #form textarea{height:48px;resize:vertical}
+ .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ .acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+ .hint{font-size:12px;margin:4px 0;padding:4px 6px;border:1px dashed var(--line);border-radius:6px;cursor:pointer}
+ .hint:hover{border-color:var(--acc)}
+ #banner{display:none;padding:8px 10px;background:#fff4d6;color:#5a4300;font-size:13px}
+ #banner button{margin-left:6px}
+ .pin{width:22px;height:22px;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 4px #0008}
+ .pin.sel{width:30px;height:30px;box-shadow:0 0 0 4px #0a66d8aa,0 1px 4px #0008}
+ .lbl{background:none;border:none;box-shadow:none;font-weight:700;font-size:11px;color:#111;
+   text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;padding:0}
+ .lbl:before{display:none}
+ .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mut)}
+ .legend span{display:inline-flex;align-items:center;gap:4px}
+ .legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+ .leaflet-container.adding{cursor:crosshair}
+ @media (max-width:800px){#app{flex-direction:column}#side{width:auto;height:55%;border-left:none;border-top:1px solid var(--line)}}
+</style></head><body>
+<div id="app">
+ <div id="map"></div>
+ <div id="side">
+  <div id="banner"></div>
+  <div class="bar">
+   <button id="bOpen">Mở CSV…</button>
+   <button id="bDraft" title="Dùng bản nháp do pipeline/02_build_buildings.py tạo">Dùng bản nháp</button>
+   <button id="bExport" class="pri">Xuất CSV</button>
+   <input type="file" id="file" accept=".csv,text/csv" hidden>
+  </div>
+  <div class="bar">
+   <span class="prog" id="prog">0/0</span><span class="mut">đã kiểm tra</span>
+   <button id="bNext" style="margin-left:auto">Tòa chưa kiểm tra kế tiếp →</button>
+  </div>
+  <div class="bar">
+   <input id="q" placeholder="Tìm mã / tên" style="flex:1;min-width:110px">
+   <select id="fZone"><option value="">Mọi phân khu</option></select>
+   <label class="mut"><input type="checkbox" id="fUnv"> chưa kiểm tra</label>
+  </div>
+  <div class="bar">
+   <button id="bAdd">+ Thêm điểm (dãy thấp tầng)</button>
+   <div class="legend">
+    <span><i style="background:#1a9e3f"></i>Sảnh OSM</span><span><i style="background:#f0a000"></i>Điểm OSM</span>
+    <span><i style="background:#e0302b"></i>Ước lượng</span><span><i style="background:#0a66d8"></i>Thủ công</span>
+    <span><i style="background:#8e8e93"></i>Đã kiểm tra</span>
+   </div>
+  </div>
+  <div id="list"></div>
+  <div id="form"><div class="mut">Chọn một điểm trong danh sách hoặc trên bản đồ.</div></div>
+ </div>
+</div>
+<script>
+'use strict';
+const CTX = window.VGP_CTX;
+const COLS = ['id','name','zone','type','lobby_lat','lobby_lon','aliases','note','is_depot','lobby_src','verified'];
+const SRC_COLOR = {osm_sanh:'#1a9e3f', osm_diem:'#f0a000', uoc_luong:'#e0302b', thu_cong:'#0a66d8'};
+const KIND_LBL = {sanh:'Sảnh (OSM)', toa:'Điểm "Tòa" (OSM)', dia_chi:'Địa chỉ người dùng nhập', poi:'Cửa hàng khối đế', ham_xe:'Lối xuống hầm xe'};
+const LS_KEY = 'vgp_lobby_editor_v1';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let rows = [];          // dữ liệu đang chỉnh
+let selId = null;
+let adding = false;
+let dirty = false;
+
+// ---------- Bản đồ ----------
+const map = L.map('map', {preferCanvas: false, maxZoom: 21});
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
+const BASES = {
+  'Vệ tinh (Esri)': L.tileLayer(ESRI + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom: 21, maxNativeZoom: 19, attribution: '© Esri, Maxar'}),
+  'Bản đồ (Esri)': L.tileLayer(ESRI + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}', {maxZoom: 21, maxNativeZoom: 19, opacity: .7, attribution: '© Esri, OpenStreetMap'}),
+};
+BASES['Vệ tinh (Esri)'].addTo(map);
+const gBase = L.layerGroup().addTo(map), gFoot = L.layerGroup().addTo(map), gRoad = L.layerGroup().addTo(map);
+const gHint = L.layerGroup().addTo(map), gPins = L.layerGroup().addTo(map), gLbl = L.layerGroup().addTo(map);
+L.control.layers(BASES, {'Khối nhà OSM': gFoot, 'Đường OSM': gRoad, 'Nhãn mã': gLbl}, {position: 'topleft'}).addTo(map);
+
+if (!CTX) {
+  $('form').innerHTML = '<b style="color:#c00">Thiếu file tools/editor_context.js – chạy python3 pipeline/02_build_buildings.py trước.</b>';
+} else {
+  const bnd = L.polygon(CTX.boundary, {color: '#ffcc00', weight: 2, fill: false, dashArray: '6 4', interactive: false}).addTo(gBase);
+  map.fitBounds(bnd.getBounds());
+  const rc = {moto: '#ff4d4d', walk: '#38d36b', other: '#b07cff'};
+  CTX.roads.forEach(r => L.polyline(r.g, {color: rc[r.c], weight: r.c === 'moto' ? 2.5 : 1.5, opacity: .75, interactive: false}).addTo(gRoad));
+  CTX.footprints.forEach(f => {
+    const p = L.polygon(f.g, {color: '#ffffff', weight: 1, fillColor: '#ffffff', fillOpacity: .12});
+    p.bindTooltip(esc(f.id || f.nm || '(không tên)'), {sticky: true});
+    if (f.id) p.on('click', () => select(f.id, false));
+    p.addTo(gFoot);
+    f._layer = p;
+  });
+}
+map.on('zoomend', () => map.getZoom() >= 17 ? gLbl.addTo(map) : map.removeLayer(gLbl));
+
+// ---------- Lưu tạm trong trình duyệt ----------
+function saveLocal() {
+  dirty = true;
+  try { localStorage.setItem(LS_KEY, JSON.stringify({t: Date.now(), rows})); } catch (e) {}
+}
+function loadLocal() {
+  try { const s = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); return s && s.rows && s.rows.length ? s : null; }
+  catch (e) { return null; }
+}
+
+// ---------- CSV ----------
+function parseCSV(text) {
+  text = text.replace(/^﻿/, '');
+  const out = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+      else f += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(f); f = ''; if (row.some(x => x !== '')) out.push(row); row = [];
+    } else f += c;
+  }
+  row.push(f); if (row.some(x => x !== '')) out.push(row);
+  const head = out.shift().map(h => h.trim());
+  return out.map(r => { const o = {}; COLS.forEach(k => { const j = head.indexOf(k); o[k] = j >= 0 ? (r[j] || '').trim() : ''; }); return o; });
+}
+function toCSV(rs) {
+  const q = v => /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  return '﻿' + [COLS.join(',')].concat(rs.map(r => COLS.map(k => q(String(r[k] ?? ''))).join(','))).join('\n') + '\n';
+}
+
+// ---------- Dữ liệu ----------
+function setRows(rs, msg) {
+  rows = rs.map(r => Object.assign(Object.fromEntries(COLS.map(k => [k, ''])), r));
+  selId = null; dirty = false;
+  const zones = [...new Set(rows.map(r => r.zone).filter(Boolean))].sort();
+  $('fZone').innerHTML = '<option value="">Mọi phân khu</option><option value="__none">(chưa có phân khu)</option>' +
+    zones.map(z => `<option>${esc(z)}</option>`).join('');
+  renderAll();
+  if (msg) flash(msg);
+}
+function byId(id) { return rows.find(r => r.id === id); }
+function isVerified(r) { return r.verified === '1'; }
+function color(r) { return isVerified(r) ? '#8e8e93' : (SRC_COLOR[r.lobby_src] || '#e0302b'); }
+
+function filtered() {
+  const q = $('q').value.trim().toUpperCase().replace(/[\s.\-_]/g, '');
+  const z = $('fZone').value, unv = $('fUnv').checked;
+  return rows.filter(r => {
+    if (unv && isVerified(r)) return false;
+    if (z === '__none' && r.zone) return false;
+    if (z && z !== '__none' && r.zone !== z) return false;
+    if (q) { const t = (r.id + ' ' + r.name + ' ' + r.aliases).toUpperCase().replace(/[\s.\-_]/g, ''); if (!t.includes(q)) return false; }
+    return true;
+  });
+}
+
+// ---------- Hiển thị ----------
+const pinLayers = {};
+function pinIcon(r) {
+  const sel = r.id === selId;
+  const extra = r.is_depot === '1' ? 'outline:3px solid #e3007d;' : '';
+  return L.divIcon({className: '', iconSize: sel ? [30, 30] : [22, 22],
+    html: `<div class="pin${sel ? ' sel' : ''}" style="background:${color(r)};${extra}"></div>`});
+}
+function renderPins() {
+  gPins.clearLayers(); gLbl.clearLayers();
+  for (const k in pinLayers) delete pinLayers[k];
+  rows.forEach(r => {
+    const lat = parseFloat(r.lobby_lat), lon = parseFloat(r.lobby_lon);
+    if (!isFinite(lat) || !isFinite(lon)) return;
+    const m = L.marker([lat, lon], {icon: pinIcon(r), draggable: true, zIndexOffset: r.id === selId ? 1000 : 0});
+    m.on('click', () => select(r.id, false));
+    m.on('dragstart', () => select(r.id, false));
+    m.on('dragend', e => { const p = e.target.getLatLng(); setLobby(r, p.lat, p.lng); });
+    m.addTo(gPins); pinLayers[r.id] = m;
+    L.tooltip({permanent: true, direction: 'top', offset: [0, -12], className: 'lbl'})
+      .setLatLng([lat, lon]).setContent(esc(r.id)).addTo(gLbl);
+  });
+}
+function renderList() {
+  const fs = filtered();
+  $('list').innerHTML = fs.map(r =>
+    `<div class="row${r.id === selId ? ' sel' : ''}" data-id="${esc(r.id)}"><span class="dot" style="background:${color(r)}"></span>` +
+    `${esc(r.id)}${r.is_depot === '1' ? ' ★' : ''}${r.type === 'thap_tang' ? ' <span class="mut">(thấp tầng)</span>' : ''}` +
+    `<span class="z">${esc(r.zone || '—')}</span></div>`).join('') ||
+    '<div class="mut" style="padding:10px">Không có điểm nào khớp bộ lọc.</div>';
+  const v = rows.filter(isVerified).length;
+  $('prog').textContent = `${v}/${rows.length}`;
+}
+function renderHints() {
+  gHint.clearLayers();
+  const r = byId(selId); if (!r || !CTX) return;
+  (CTX.hints[r.id] || []).forEach(h => {
+    const c = L.circleMarker(h.snap, {radius: 7, color: '#fff', weight: 2, fillColor: '#000', fillOpacity: .35, dashArray: '2 2'});
+    c.bindTooltip(`${esc(KIND_LBL[h.kind] || h.kind)} · ${h.d} m<br>${esc(h.nm)}<br><i>Bấm để dùng làm sảnh</i>`);
+    c.on('click', () => { setLobby(r, h.snap[0], h.snap[1]); });
+    c.addTo(gHint);
+  });
+  CTX.footprints.forEach(f => f._layer && f._layer.setStyle(f.id === r.id
+    ? {color: '#00e5ff', weight: 3, fillOpacity: .2} : {color: '#ffffff', weight: 1, fillOpacity: .12}));
+}
+function renderForm() {
+  const r = byId(selId);
+  if (!r) { $('form').innerHTML = '<div class="mut">Chọn một điểm trong danh sách hoặc trên bản đồ.</div>'; return; }
+  const hints = (CTX && CTX.hints[r.id]) || [];
+  const srcLbl = {osm_sanh: 'Sảnh OSM', osm_diem: 'Điểm OSM', uoc_luong: 'Ước lượng', thu_cong: 'Thủ công'}[r.lobby_src] || r.lobby_src;
+  $('form').innerHTML = `
+   <div class="g2"><div><label>Mã (id)</label><input id="f_id" value="${esc(r.id)}"></div>
+    <div><label>Loại</label><select id="f_type"><option value="cao_tang">Cao tầng</option><option value="thap_tang">Thấp tầng (dãy)</option></select></div></div>
+   <label>Tên hiển thị</label><input id="f_name" value="${esc(r.name)}">
+   <label>Phân khu</label><input id="f_zone" list="zl" value="${esc(r.zone)}">
+   <datalist id="zl">${[...new Set(rows.map(x => x.zone).filter(Boolean))].sort().map(z => `<option value="${esc(z)}">`).join('')}</datalist>
+   <label>Tên gọi khác (ngăn bởi ;)</label><input id="f_aliases" value="${esc(r.aliases)}">
+   <label>Ghi chú</label><textarea id="f_note">${esc(r.note)}</textarea>
+   <div class="mut" style="margin-top:6px">Sảnh: ${esc(r.lobby_lat)}, ${esc(r.lobby_lon)} · nguồn: <b>${esc(srcLbl)}</b>${r.is_depot === '1' ? ' · <b style="color:#e3007d">ĐIỂM XUẤT PHÁT</b>' : ''}</div>
+   ${hints.length ? '<label>Điểm gợi ý từ OSM (bấm để dùng)</label>' + hints.map((h, i) =>
+     `<div class="hint" data-h="${i}">${esc(KIND_LBL[h.kind] || h.kind)} · cách mép ${h.d} m — ${esc(h.nm.slice(0, 60))}</div>`).join('') : ''}
+   <div class="acts">
+    <button class="pri" id="f_ok">${isVerified(r) ? 'Bỏ đánh dấu đã kiểm tra' : '✓ Đã kiểm tra & sang điểm kế'}</button>
+    <button id="f_zoom">Phóng tới</button>
+    <button id="f_del" style="margin-left:auto;color:#c00">Xóa điểm</button>
+   </div>`;
+  $('f_type').value = r.type || 'cao_tang';
+  const bind = (fid, key) => $(fid).addEventListener('change', e => updateField(r, key, e.target.value.trim()));
+  bind('f_name', 'name'); bind('f_zone', 'zone'); bind('f_aliases', 'aliases'); bind('f_note', 'note'); bind('f_type', 'type');
+  $('f_id').addEventListener('change', e => {
+    const v = e.target.value.trim();
+    if (!v) { e.target.value = r.id; return; }
+    if (v !== r.id && byId(v)) { flash('Mã ' + v + ' đã tồn tại', true); e.target.value = r.id; return; }
+    r.id = v; selId = v; saveLocal(); renderAll();
+  });
+  $('form').querySelectorAll('.hint').forEach(el => el.onclick = () => { const h = hints[+el.dataset.h]; setLobby(r, h.snap[0], h.snap[1]); });
+  $('f_ok').onclick = () => {
+    if (isVerified(r)) { r.verified = '0'; saveLocal(); renderAll(); return; }
+    r.verified = '1'; saveLocal(); nextUnverified();
+  };
+  $('f_zoom').onclick = () => zoomTo(r);
+  $('f_del').onclick = () => {
+    if (!confirm('Xóa điểm ' + r.id + '?')) return;
+    rows = rows.filter(x => x !== r); selId = null; saveLocal(); renderAll();
+  };
+}
+function renderAll() { renderPins(); renderList(); renderHints(); renderForm(); }
+
+// ---------- Thao tác ----------
+function updateField(r, k, v) { r[k] = v; saveLocal(); renderList(); }
+function setLobby(r, lat, lon) {
+  r.lobby_lat = lat.toFixed(7); r.lobby_lon = lon.toFixed(7);
+  r.lobby_src = 'thu_cong';
+  saveLocal(); selId = r.id; renderAll();
+}
+function zoomTo(r) {
+  const lat = parseFloat(r.lobby_lat), lon = parseFloat(r.lobby_lon);
+  if (isFinite(lat)) map.setView([lat, lon], Math.max(map.getZoom(), 19));
+}
+function select(id, zoom = true) {
+  selId = id; renderAll();
+  const r = byId(id); if (r && zoom) zoomTo(r);
+  const el = $('list').querySelector(`.row[data-id="${CSS.escape(id)}"]`);
+  if (el) el.scrollIntoView({block: 'nearest'});
+}
+function nextUnverified() {
+  // Tìm trong danh sách đang lọc trước, hết thì tìm trong toàn bộ
+  const pick = list => {
+    const i = list.findIndex(r => r.id === selId);
+    return list.slice(i + 1).concat(list.slice(0, i + 1)).find(r => !isVerified(r));
+  };
+  const n = pick(filtered()) || pick(rows);
+  if (n) {
+    if (!filtered().includes(n)) { $('q').value = ''; $('fZone').value = ''; }
+    select(n.id);
+  } else { selId = null; renderAll(); flash('Đã kiểm tra hết tất cả các điểm 🎉'); }
+}
+function flash(msg, bad) {
+  const b = $('banner'); b.style.display = 'block'; b.style.background = bad ? '#ffd9d6' : '#e3f6e5';
+  b.style.color = bad ? '#7a0000' : '#0d4a17'; b.textContent = msg;
+  clearTimeout(flash.t); flash.t = setTimeout(() => b.style.display = 'none', 3500);
+}
+
+$('list').addEventListener('click', e => { const el = e.target.closest('.row'); if (el) select(el.dataset.id); });
+['q', 'fZone', 'fUnv'].forEach(id => $(id).addEventListener('input', renderList));
+$('bNext').onclick = nextUnverified;
+$('bOpen').onclick = () => $('file').click();
+$('file').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try { const rs = parseCSV(rd.result); setRows(rs, `Đã mở ${f.name}: ${rs.length} điểm`); saveLocal(); dirty = false; }
+    catch (err) { flash('Không đọc được CSV: ' + err.message, true); }
+  };
+  rd.readAsText(f, 'utf-8'); e.target.value = '';
+};
+$('bDraft').onclick = () => {
+  if (!CTX) return;
+  if (rows.length && dirty && !confirm('Thay dữ liệu đang chỉnh bằng bản nháp từ script?')) return;
+  setRows(JSON.parse(JSON.stringify(CTX.draft)), `Đã nạp bản nháp: ${CTX.draft.length} điểm`); saveLocal(); dirty = false;
+};
+$('bExport').onclick = () => {
+  const ids = rows.map(r => r.id), dup = [...new Set(ids.filter((x, i) => ids.indexOf(x) !== i))];
+  const dep = rows.filter(r => r.is_depot === '1').map(r => r.id);
+  const warn = [];
+  if (dup.length) warn.push('Trùng mã: ' + dup.join(', '));
+  if (dep.length !== 1) warn.push('Cần đúng 1 điểm xuất phát, hiện có ' + dep.length);
+  if (warn.length && !confirm(warn.join('\n') + '\n\nVẫn xuất?')) return;
+  const blob = new Blob([toCSV(rows)], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'buildings.csv';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  dirty = false;
+  flash('Đã xuất buildings.csv – chép đè vào thư mục data/');
+};
+$('bAdd').onclick = () => {
+  adding = !adding; $('bAdd').classList.toggle('on', adding);
+  map.getContainer().classList.toggle('adding', adding);
+  $('bAdd').textContent = adding ? 'Bấm lên bản đồ để đặt điểm… (bấm lại để hủy)' : '+ Thêm điểm (dãy thấp tầng)';
+};
+map.on('click', e => {
+  if (!adding) return;
+  let n = 1; while (byId('MOI-' + n)) n++;
+  const r = Object.fromEntries(COLS.map(k => [k, '']));
+  Object.assign(r, {id: 'MOI-' + n, name: '', zone: '', type: 'thap_tang', is_depot: '0', verified: '0', lobby_src: 'thu_cong',
+    lobby_lat: e.latlng.lat.toFixed(7), lobby_lon: e.latlng.lng.toFixed(7)});
+  rows.push(r); saveLocal();
+  $('bAdd').click();
+  select(r.id, false);
+  setTimeout(() => { const f = $('f_id'); if (f) { f.focus(); f.select(); } }, 50);
+  flash('Đã thêm ' + r.id + ' – đổi mã (vd. T16) và điền tên, phân khu');
+});
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+// ---------- Khởi động ----------
+(function init() {
+  const saved = loadLocal();
+  if (saved) {
+    setRows(saved.rows); dirty = true;
+    const b = $('banner'); b.style.display = 'block'; b.style.background = '#fff4d6'; b.style.color = '#5a4300';
+    b.innerHTML = `Đã khôi phục bản đang chỉnh lưu lúc ${new Date(saved.t).toLocaleString('vi-VN')}. Nhớ “Xuất CSV” để lưu vào dự án.`;
+    setTimeout(() => b.style.display = 'none', 6000);
+  } else if (CTX) {
+    setRows(JSON.parse(JSON.stringify(CTX.draft)), `Đã nạp bản nháp: ${CTX.draft.length} điểm`);
+  }
+  map.fire('zoomend');
+})();
+</script>
+</body></html>

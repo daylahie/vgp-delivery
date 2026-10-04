@@ -1,0 +1,71 @@
+﻿id,name,zone,type,lobby_lat,lobby_lon,aliases,note,is_depot,lobby_src,verified
+GH1,Tòa GH1,Glory Heights,cao_tang,10.8434773,106.8416459,,,0,uoc_luong,1
+GH2,Tòa GH2,Glory Heights,cao_tang,10.8436980,106.8407775,,,0,uoc_luong,1
+GH3,Tòa GH3,Glory Heights,cao_tang,10.8444678,106.8410870,,,0,uoc_luong,1
+GH5,Tòa GH5,Glory Heights,cao_tang,10.8447672,106.8423716,,,0,uoc_luong,1
+GH6,Tòa GH6,Glory Heights,cao_tang,10.8445582,106.8423257,,,0,uoc_luong,1
+LUM-A,Lumière Boulevard – Tower A,Lumière Boulevard,cao_tang,10.8404513,106.8396608,Lumiere A;Lumière A,,0,osm_diem,1
+LUM-B,Lumière Boulevard – Tower B,Lumière Boulevard,cao_tang,10.8397056,106.8401697,Lumiere B;Lumière B,"OSM chỉ có điểm, chưa có khối nhà",0,osm_diem,1
+LUM-C,Lumière Boulevard – Tower C,Lumière Boulevard,cao_tang,10.8390940,106.8398957,Lumiere C;Lumière C,"OSM chỉ có điểm, chưa có khối nhà",0,osm_diem,1
+LUM-D,Lumière Boulevard – Tower D,Lumière Boulevard,cao_tang,10.8385149,106.8389560,Lumiere D;Lumière D,,0,uoc_luong,1
+LUM-E,Lumière Boulevard – Tower E,Lumière Boulevard,cao_tang,10.8397097,106.8390309,Lumiere E;Lumière E,,0,uoc_luong,1
+MCP-A,Masteri Centre Point – Tower A,Masteri Centre Point,cao_tang,10.8430997,106.8409730,Masteri A;MCP A,,0,osm_diem,1
+MCP-B,Masteri Centre Point – Tower B,Masteri Centre Point,cao_tang,10.8400513,106.8403745,Masteri B;MCP B,"OSM có 2 khối trùng mã, lấy khối lớn nhất",0,uoc_luong,1
+MCP-C,Masteri Centre Point – Tower C,Masteri Centre Point,cao_tang,10.8390296,106.8399140,Masteri C;MCP C,"OSM có 2 khối trùng mã, lấy khối lớn nhất",0,uoc_luong,1
+MCP-D,Masteri Centre Point – Tower D,Masteri Centre Point,cao_tang,10.8409329,106.8406469,Masteri D;MCP D,,0,osm_diem,1
+MCP-E,Masteri Centre Point – Tower E,Masteri Centre Point,cao_tang,10.8422106,106.8402874,Masteri E;MCP E,,0,osm_diem,1
+BE1,Tòa BE1,The Beverly,cao_tang,10.8447760,106.8473752,,,0,uoc_luong,1
+BE2,Tòa BE2,The Beverly,cao_tang,10.8444005,106.8463944,,,0,uoc_luong,1
+BE3,Tòa BE3,The Beverly,cao_tang,10.8438791,106.8455821,,,0,uoc_luong,1
+BE5,Tòa BE5,The Beverly,cao_tang,10.8437957,106.8453460,,,0,uoc_luong,1
+BE6,Tòa BE6,The Beverly,cao_tang,10.8451315,106.8455180,,,0,uoc_luong,1
+BE7,Tòa BE7,The Beverly,cao_tang,10.8453854,106.8469119,,,0,uoc_luong,1
+BS7,Tòa BS7,The Beverly Solari,cao_tang,10.8454572,106.8425469,,,0,uoc_luong,1
+BS8,Tòa BS8,The Beverly Solari,cao_tang,10.8466328,106.8417566,,,0,uoc_luong,1
+BS9,Tòa BS9,The Beverly Solari,cao_tang,10.8471368,106.8416110,,,0,uoc_luong,1
+BS10,Tòa BS10,The Beverly Solari,cao_tang,10.8474121,106.8426001,,,0,uoc_luong,1
+BS11,Tòa BS11,The Beverly Solari,cao_tang,10.8473259,106.8454499,,,0,uoc_luong,1
+BS12,Tòa BS12,The Beverly Solari,cao_tang,10.8466002,106.8437514,,,0,uoc_luong,1
+BS15,Tòa BS15,The Beverly Solari,cao_tang,10.8475513,106.8434417,,,0,uoc_luong,1
+BS16,Tòa BS16,The Beverly Solari,cao_tang,10.8473551,106.8445169,,,0,uoc_luong,1
+OS1,Tòa OS1,The Oasis,cao_tang,10.8431866,106.8437076,,,0,uoc_luong,1
+OS2,Tòa OS2,The Oasis,cao_tang,10.8442743,106.8431703,,,0,uoc_luong,1
+OS3,Tòa OS3,The Oasis,cao_tang,10.8444401,106.8436081,,,0,uoc_luong,1
+OS5,Tòa OS5,The Oasis,cao_tang,10.8434813,106.8445176,,,0,uoc_luong,1
+S6.01,Tòa S6.01,The Origami,cao_tang,10.8419859,106.8379531,S601;S6-01,,0,osm_diem,1
+S6.02,Tòa S6.02,The Origami,cao_tang,10.8426005,106.8374886,S602;S6-02,,0,osm_diem,1
+S6.03,Tòa S6.03,The Origami,cao_tang,10.8439911,106.8381248,S603;S6-03,,0,osm_diem,1
+S6.05,Tòa S6.05,The Origami,cao_tang,10.8440455,106.8388687,S605;S6-05,,0,osm_diem,1
+S6.06,Tòa S6.06,The Origami,cao_tang,10.8428352,106.8386179,S606;S6-06,,0,osm_diem,1
+S7.01,Tòa S7.01,The Origami,cao_tang,10.8426694,106.8369688,S701;S7-01,,0,uoc_luong,1
+S7.02,Tòa S7.02,The Origami,cao_tang,10.8436447,106.8366716,S702;S7-02,,0,osm_diem,1
+S7.03,Tòa S7.03,The Origami,cao_tang,10.8444483,106.8369119,S703;S7-03,,0,osm_diem,1
+S7.05,Tòa S7.05,The Origami,cao_tang,10.8441018,106.8377060,S705;S7-05,,0,osm_diem,1
+S8.01,Tòa S8.01,The Origami,cao_tang,10.8436909,106.8359237,S801;S8-01,,0,osm_diem,1
+S8.02,Tòa S8.02,The Origami,cao_tang,10.8445452,106.8358615,S802;S8-02,,0,osm_diem,1
+S8.03,Tòa S8.03,The Origami,cao_tang,10.8451618,106.8363745,S803;S8-03,,0,osm_diem,1
+S9.01,Tòa S9.01,The Origami,cao_tang,10.8454682,106.8367223,S901;S9-01,,0,osm_diem,1
+S9.02,Tòa S9.02,The Origami,cao_tang,10.8464738,106.8367802,S902;S9-02,,0,osm_diem,1
+S9.03,Tòa S9.03,The Origami,cao_tang,10.8471868,106.8371583,S903;S9-03,,0,thu_cong,1
+S10.01,Tòa S10.01,The Origami,cao_tang,10.8444123,106.8390435,S1001;S10-01,,0,osm_diem,1
+S10.02,Tòa S10.02,The Origami,cao_tang,10.8451289,106.8386080,S1002;S10-02,,0,uoc_luong,1
+S10.03,Tòa S10.03,The Origami,cao_tang,10.8467136,106.8390482,S1003;S10-03,,0,uoc_luong,1
+S10.05,Tòa S10.05,The Origami,cao_tang,10.8472118,106.8398187,S1005;S10-05,,0,uoc_luong,1
+S10.06,Tòa S10.06,The Origami,cao_tang,10.8463886,106.8400334,S1006;S10-06,,0,uoc_luong,1
+S10.07,Tòa S10.07,The Origami,cao_tang,10.8450545,106.8396921,S1007;S10-07,,0,uoc_luong,1
+S1.01,Tòa S1.01,The Rainbow,cao_tang,10.8369229,106.8305255,S101;S1-01,,0,thu_cong,1
+S1.02,Tòa S1.02,The Rainbow,cao_tang,10.8374869,106.8301389,S102;S1-02,,0,osm_diem,1
+S1.03,Tòa S1.03,The Rainbow,cao_tang,10.8383064,106.8303372,S103;S1-03,,0,osm_diem,1
+S1.05,Tòa S1.05,The Rainbow,cao_tang,10.8392542,106.8307808,S105;S1-05,,0,uoc_luong,1
+S1.06,Tòa S1.06,The Rainbow,cao_tang,10.8386197,106.8311996,S106;S1-06,,0,osm_diem,1
+S1.07,Tòa S1.07,The Rainbow,cao_tang,10.8374724,106.8316103,S107;S1-07,,0,uoc_luong,1
+S2.01,Tòa S2.01,The Rainbow,cao_tang,10.8377212,106.8317612,S201;S2-01,,0,osm_diem,1
+S2.02,Tòa S2.02,The Rainbow,cao_tang,10.8386251,106.8318061,S202;S2-02,,0,osm_diem,1
+S2.03,Tòa S2.03,The Rainbow,cao_tang,10.8385443,106.8325410,S203;S2-03,,0,osm_diem,1
+S2.05,Tòa S2.05,The Rainbow,cao_tang,10.8377092,106.8327064,S205;S2-05,,0,osm_diem,1
+S3.01,Tòa S3.01,The Rainbow,cao_tang,10.8390467,106.8338736,S301;S3-01,Lối hầm xe gần: Hầm xe Tòa nhà S3.01 S3.02 phân khu Rainbow,0,osm_sanh,1
+S3.02,Tòa S3.02,The Rainbow,cao_tang,10.8395329,106.8342946,S302;S3-02,Lối hầm xe gần: Hầm xe Tòa nhà S3.01 S3.02 phân khu Rainbow,0,osm_sanh,1
+S3.03,Tòa S3.03,The Rainbow,cao_tang,10.8387595,106.8347377,S303;S3-03,Lối hầm xe gần: Hầm xe Tòa nhà S3.03 S3.05 phân khu Rainbow,1,osm_diem,1
+S3.05,Tòa S3.05,The Rainbow,cao_tang,10.8382850,106.8342938,S305;S3-05,Lối hầm xe gần: Hầm xe Tòa nhà S3.03 S3.05 phân khu Rainbow,0,osm_diem,1
+S5.01,Tòa S5.01,The Rainbow,cao_tang,10.8402450,106.8371338,S501;S5-01,,0,uoc_luong,1
+S5.03,Tòa S5.03,The Rainbow,cao_tang,10.8411346,106.8374612,S503;S5-03,,0,uoc_luong,1

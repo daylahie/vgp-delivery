@@ -1,0 +1,31 @@
+BÁO CÁO MA TRẬN KHOẢNG CÁCH – 2026-10-04 08:56
+
+Phiên bản dữ liệu: 2026.10.04-bbf8ce
+Số điểm: 70 · kích thước app/data/data.json: 0.61 MB (giới hạn 8 MB)
+[moto] cặp không tới được: 0
+[walk] cặp không tới được: 0
+
+KIỂM TRA NGẪU NHIÊN 10 CẶP (đối chiếu thực tế)
+Từ      Đến        Thẳng   Xe máy  Về (xm)   Đi bộ  Hệ số xe máy
+S3.03   GH1          918     1980     1289    1264  2.16
+BE5     S1.03       1750     2505     2245    2241  1.43
+OS3     MCP-E        439      669      627     609  1.52
+GH5     BS16         370      676      676     456  1.83
+S10.07  BS12         476      994      962     936  2.09
+S7.01   BE6          974     1325     1308    1289  1.36
+BE5     BS12         356      874      874     852  2.46
+MCP-D   OS1          417      558      576     554  1.34
+S10.01  BE5          692      861      865     858  1.24
+MCP-B   S10.07       558      834      831     813  1.49
+
+10 CẶP XE MÁY CHÊNH LỆCH ĐI/VỀ NHIỀU NHẤT (do đường một chiều)
+  S1.02 → S2.05: 1687 m · S2.05 → S1.02: 469 m (chênh 1218 m)
+  S1.01 → S2.05: 1392 m · S2.05 → S1.01: 297 m (chênh 1095 m)
+  S1.03 → S2.05: 1641 m · S2.05 → S1.03: 587 m (chênh 1054 m)
+  S3.03 → S3.05: 141 m · S3.05 → S3.03: 1191 m (chênh 1050 m)
+  S2.01 → S2.05: 1149 m · S2.05 → S2.01: 197 m (chênh 952 m)
+  S1.07 → S2.05: 1133 m · S2.05 → S1.07: 181 m (chênh 952 m)
+  S1.06 → S2.05: 1266 m · S2.05 → S1.06: 314 m (chênh 952 m)
+  S1.05 → S2.05: 1398 m · S2.05 → S1.05: 446 m (chênh 952 m)
+  S2.02 → S2.05: 1218 m · S2.05 → S2.02: 349 m (chênh 869 m)
+  S1.02 → S3.05: 1503 m · S3.05 → S1.02: 654 m (chênh 849 m)

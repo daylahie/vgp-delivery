@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VGP – Kiểm tra mạng đường</title>
+<!-- Mẫu giao diện; pipeline/03_build_graph.py chèn dữ liệu và ghi ra raw/graph_preview.html -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+ :root{--bg:#fff;--fg:#1d1d1f;--mut:#6e6e73;--line:#d2d2d7;--acc:#0a66d8;--sel:#e8f0fe}
+ @media (prefers-color-scheme:dark){:root{--bg:#1c1c1e;--fg:#f2f2f7;--mut:#a1a1a6;--line:#3a3a3c;--acc:#4c9bff;--sel:#203350}}
+ *{box-sizing:border-box}
+ html,body{margin:0;height:100%;font:14px -apple-system,system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+ #app{display:flex;height:100%}#map{flex:1;min-width:0}
+ #side{width:360px;border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:auto}
+ .sec{padding:10px;border-bottom:1px solid var(--line)}
+ .sec h4{margin:0 0 6px;font-size:13px}
+ button,select,input,textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+ button{cursor:pointer}button:hover{border-color:var(--acc)}
+ button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}
+ button.on{background:#ff9500;color:#fff;border-color:#ff9500}
+ .seg{display:flex}.seg button{flex:1;border-radius:0}.seg button:first-child{border-radius:6px 0 0 6px}.seg button:last-child{border-radius:0 6px 6px 0}
+ .ok{color:#1a9e3f;font-weight:600}.bad{color:#d70015;font-weight:600}.mut{color:var(--mut);font-size:12px}
+ .item{padding:4px 6px;border-radius:6px;cursor:pointer}.item:hover{background:var(--sel)}
+ .leg span{display:inline-flex;align-items:center;gap:5px;margin:2px 8px 2px 0;font-size:12px}
+ .leg i{display:inline-block;width:18px;height:0;border-top:3px solid}
+ .pop b{font-size:13px}.pop .acts{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+ .pop button{font-size:12px;padding:4px 6px;text-align:left}
+ #changes{font-size:12px;max-height:160px;overflow:auto;margin:6px 0}
+ .lbl{background:none;border:none;box-shadow:none;font-weight:700;font-size:11px;color:#111;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;padding:0}
+ .lbl:before{display:none}
+ .arrow{font-size:14px;line-height:14px;color:#ff9500;text-shadow:0 0 2px #000;font-weight:900}
+ .leaflet-container.drawing{cursor:crosshair}
+ @media (max-width:800px){#app{flex-direction:column}#side{width:auto;height:50%;border-left:none;border-top:1px solid var(--line)}}
+</style></head><body>
+<div id="app"><div id="map"></div>
+<div id="side">
+ <div class="sec">
+  <div class="seg"><button id="mMoto" class="pri">Xe máy</button><button id="mWalk">Đi bộ</button></div>
+  <div id="stat" style="margin-top:8px"></div>
+ </div>
+ <div class="sec"><h4>Sảnh bị cô lập</h4><div id="bad"></div></div>
+ <div class="sec leg" id="legend"></div>
+ <div class="sec">
+  <h4>Hiệu chỉnh</h4>
+  <div class="mut">Bấm vào một đoạn đường để chặn / đổi chiều / cho phép. Vẽ lối tắt cho những lối đi thực tế OSM chưa có.</div>
+  <div style="margin-top:6px"><button id="bDraw">✏️ Vẽ lối tắt</button></div>
+  <div id="drawBox" style="display:none;margin-top:6px">
+   <div class="mut" id="drawInfo">Bấm lên bản đồ để thêm điểm (đầu và cuối nên chạm vào đường có sẵn).</div>
+   <select id="dMode"><option value="both">Xe máy + đi bộ</option><option value="walk">Chỉ đi bộ</option><option value="moto">Chỉ xe máy</option></select>
+   <label class="mut"><input type="checkbox" id="dOne"> một chiều (theo thứ tự bấm)</label>
+   <input id="dNote" placeholder="Ghi chú, vd. lối tắt qua công viên" style="width:100%;margin-top:4px">
+   <div style="margin-top:6px;display:flex;gap:6px"><button class="pri" id="dOk">Xong</button><button id="dUndo">Bỏ điểm cuối</button><button id="dCancel">Hủy</button></div>
+  </div>
+ </div>
+ <div class="sec">
+  <h4>Thay đổi chưa lưu: <span id="nChg">0</span></h4>
+  <div id="changes" class="mut">Chưa có.</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+   <button class="pri" id="bSave">Tải overrides.json</button><button id="bUndo">Hoàn tác</button><button id="bCopy">Sao chép JSON</button>
+  </div>
+  <div class="mut" style="margin-top:6px">Sau khi tải: chép đè vào <b>data/overrides.json</b> rồi chạy lại <code>python3 pipeline/03_build_graph.py</code>.</div>
+ </div>
+</div></div>
+<script>
+'use strict';
+const D = /*__DATA__*/null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let mode = 'moto';
+const ovr = JSON.parse(JSON.stringify(D.overrides));
+const history = [];   // [{desc, undo}]
+
+const map = L.map('map', {preferCanvas: true, maxZoom: 21});
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
+const BASES = {
+  'Bản đồ (Esri)': L.tileLayer(ESRI + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}', {maxZoom: 21, maxNativeZoom: 19, opacity: .45, attribution: '© Esri, OpenStreetMap'}),
+  'Vệ tinh (Esri)': L.tileLayer(ESRI + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom: 21, maxNativeZoom: 19, opacity: .7, attribution: '© Esri, Maxar'}),
+};
+BASES['Bản đồ (Esri)'].addTo(map);
+L.control.layers(BASES, null, {position: 'topleft'}).addTo(map);
+const gRoad = L.layerGroup().addTo(map), gArrow = L.layerGroup().addTo(map), gLob = L.layerGroup().addTo(map),
+      gLbl = L.layerGroup().addTo(map), gDraw = L.layerGroup().addTo(map);
+
+// ---------- Kiểu đường theo chế độ ----------
+function style(r) {
+  if (r.ex) return {color: '#8e8e93', weight: 1.5, dashArray: '2 4', opacity: .9};
+  const blk = r.blk || '';
+  if (mode === 'moto') {
+    if (blk.includes('moto')) return {color: '#000', weight: 3, dashArray: '6 4'};
+    if (r.st === 'm2') return {color: r.tag === 'add' ? '#c800c8' : '#e0302b', weight: 3};
+    if (r.st === 'm1') return {color: r.tag === 'add' ? '#c800c8' : '#ff9500', weight: 3};
+    return {color: '#8e8e93', weight: 1, opacity: .6};
+  }
+  if (blk.includes('walk')) return {color: '#000', weight: 3, dashArray: '6 4'};
+  if (r.wk) return {color: r.tag === 'add' ? '#c800c8' : '#1a9e3f', weight: 2.5};
+  return {color: '#8e8e93', weight: 1, opacity: .6};
+}
+function legend() {
+  const it = mode === 'moto'
+    ? [['#e0302b', 'Hai chiều'], ['#ff9500', 'Một chiều (mũi tên ➤)'], ['#c800c8', 'Lối thêm tay'], ['#000', 'Đã chặn'], ['#8e8e93', 'Không cho xe máy / bị loại']]
+    : [['#1a9e3f', 'Đi bộ được'], ['#c800c8', 'Lối thêm tay'], ['#000', 'Đã chặn'], ['#8e8e93', 'Không đi bộ được / bị loại']];
+  $('legend').innerHTML = it.map(([c, t]) => `<span><i style="border-color:${c}"></i>${t}</span>`).join('') +
+    '<br><span style="color:#1a9e3f">● xanh: sảnh liên thông</span><span style="color:#d70015">● đỏ: cô lập</span><span style="color:#e3007d">★ điểm xuất phát</span>';
+}
+
+const roadLayers = [];
+function drawRoads() {
+  gRoad.clearLayers(); gArrow.clearLayers(); roadLayers.length = 0;
+  const all = D.roads.concat(D.excluded.map(x => Object.assign({ex: true}, x)));
+  all.forEach(r => {
+    const l = L.polyline(r.g, style(r));
+    l.on('click', e => { L.DomEvent.stopPropagation(e); if (!drawing) openRoad(r, e.latlng); });
+    l.addTo(gRoad); roadLayers.push([l, r]);
+    if (mode === 'moto' && r.st === 'm1' && !(r.blk || '').includes('moto')) addArrows(r.g);
+  });
+}
+function addArrows(g) {
+  // một mũi tên mỗi ~70 m theo chiều cho phép
+  let acc = 0;
+  for (let i = 0; i < g.length - 1; i++) {
+    const a = L.latLng(g[i]), b = L.latLng(g[i + 1]), d = a.distanceTo(b);
+    acc += d;
+    if (acc < 35 && i < g.length - 2) continue;
+    acc = -35;
+    const mid = L.latLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2);
+    const ang = Math.atan2((b.lat - a.lat), (b.lng - a.lng) * Math.cos(a.lat * Math.PI / 180)) * 180 / Math.PI;
+    L.marker(mid, {interactive: false, icon: L.divIcon({className: '', iconSize: [14, 14],
+      html: `<div class="arrow" style="transform:rotate(${-ang}deg)">➤</div>`})}).addTo(gArrow);
+  }
+}
+
+function drawLobbies() {
+  gLob.clearLayers(); gLbl.clearLayers();
+  D.lobbies.forEach(o => {
+    const bad = o.bad[mode];
+    const c = o.depot ? '#e3007d' : (bad ? '#d70015' : '#1a9e3f');
+    if (o.snap[mode]) L.polyline([o.ll, o.snap[mode]], {color: c, weight: 2, dashArray: '3 3', interactive: false}).addTo(gLob);
+    const m = L.circleMarker(o.ll, {radius: o.depot ? 9 : 6, color: '#fff', weight: 2, fillColor: c, fillOpacity: 1});
+    m.bindPopup(`<b>${esc(o.id)}</b>${o.depot ? ' – điểm xuất phát' : ''}<br>` +
+      `Gắn vào đường: xe máy ${o.d.moto ?? '—'} m · đi bộ ${o.d.walk ?? '—'} m` + (bad ? `<br><span class="bad">${esc(bad)}</span>` : ''));
+    m.addTo(gLob);
+    L.tooltip({permanent: true, direction: 'top', offset: [0, -6], className: 'lbl'}).setLatLng(o.ll).setContent(esc(o.id) + (o.depot ? ' ★' : '')).addTo(gLbl);
+  });
+}
+function drawSide() {
+  const s = D.stats;
+  $('stat').innerHTML = ['moto', 'walk'].map(m => `${m === 'moto' ? 'Xe máy' : 'Đi bộ'}: ` +
+    (s[m] ? `<span class="bad">${s[m]} sảnh cô lập</span>` : '<span class="ok">sạch</span>')).join(' · ') +
+    `<div class="mut">Tổng ${D.lobbies.length} sảnh · xuất phát ${esc(D.depot)}</div>`;
+  const bad = D.lobbies.filter(o => o.bad[mode]);
+  $('bad').innerHTML = bad.length ? bad.map(o => `<div class="item" data-id="${esc(o.id)}"><b>${esc(o.id)}</b> <span class="mut">${esc(o.bad[mode])}</span></div>`).join('')
+    : '<span class="ok">Không có ở chế độ này.</span>';
+  $('bad').querySelectorAll('.item').forEach(el => el.onclick = () => { const o = D.lobbies.find(x => x.id === el.dataset.id); map.setView(o.ll, 18); });
+  legend();
+}
+function render() { drawRoads(); drawLobbies(); drawSide(); }
+map.on('zoomend', () => map.getZoom() >= 16 ? gLbl.addTo(map) : map.removeLayer(gLbl));
+
+// ---------- Hiệu chỉnh ----------
+const r6 = v => Math.round(v * 1e6) / 1e6;
+function change(desc, apply, undo) { apply(); history.push({desc, undo}); refreshChanges(); map.closePopup(); }
+function refreshChanges() {
+  $('nChg').textContent = history.length;
+  $('changes').innerHTML = history.length ? history.map((h, i) => `${i + 1}. ${esc(h.desc)}`).join('<br>') : 'Chưa có.';
+}
+function pushList(key, item, desc) { change(desc, () => ovr[key].push(item), () => ovr[key].splice(ovr[key].indexOf(item), 1)); }
+function openRoad(r, at) {
+  const name = esc(r.nm || r.hw || '');
+  let html = `<div class="pop"><b>${name || '(không tên)'}</b><br><span class="mut">${esc(r.hw)}${r.way ? ' · way ' + r.way : ''}</span>`;
+  if (r.ex) html += `<br>Bị loại: ${esc(r.why || r.hw)}`;
+  else html += `<br>${r.st === 'm2' ? 'Xe máy hai chiều' : r.st === 'm1' ? 'Xe máy một chiều' : 'Không cho xe máy'} · ${r.wk ? 'đi bộ được' : 'không đi bộ'}` +
+    (r.blk ? `<br><b>Đã chặn (${esc(r.blk)})</b>` : '');
+  html += '<div class="acts">';
+  const A = [];
+  const P = [r6(at.lat), r6(at.lng)];
+  if (r.ex && r.way) A.push(['Cho phép đi qua đường này', () => pushList('allow_ways', r.way, `Cho phép way ${r.way} (${r.nm || r.hw})`)]);
+  if (!r.ex && !r.blk) {
+    A.push(['Chặn đoạn này – xe máy', () => pushList('block_edges', {at: P, mode: 'moto', note: r.nm || ''}, `Chặn xe máy tại ${P} (${r.nm || r.hw})`)]);
+    A.push(['Chặn đoạn này – đi bộ', () => pushList('block_edges', {at: P, mode: 'walk', note: r.nm || ''}, `Chặn đi bộ tại ${P} (${r.nm || r.hw})`)]);
+    A.push(['Chặn đoạn này – cả hai', () => pushList('block_edges', {at: P, mode: 'both', note: r.nm || ''}, `Chặn cả hai tại ${P} (${r.nm || r.hw})`)]);
+    if (r.way) A.push(['Chặn cả đường (way) – cả hai', () => pushList('block_edges', {way: r.way, mode: 'both', note: r.nm || ''}, `Chặn way ${r.way} (${r.nm || r.hw})`)]);
+  }
+  if (r.blk && r.ob != null) A.push(['Bỏ chặn', () => { const it = ovr.block_edges[r.ob]; change(`Bỏ chặn ${JSON.stringify(it.at || it.way)}`,
+      () => ovr.block_edges.splice(ovr.block_edges.indexOf(it), 1), () => ovr.block_edges.push(it)); }]);
+  if (r.way && r.st === 'm1') {
+    const k = String(r.way), old = ovr.oneway_overrides[k];
+    const setOW = (v, d) => change(d, () => { ovr.oneway_overrides[k] = v; }, () => { if (old === undefined) delete ovr.oneway_overrides[k]; else ovr.oneway_overrides[k] = old; });
+    A.push(['Đổi chiều một chiều', () => setOW(r.rev ? 'yes' : '-1', `Đổi chiều way ${k} (${r.nm || r.hw})`)]);
+    A.push(['Cho đi hai chiều', () => setOW('no', `Hai chiều way ${k} (${r.nm || r.hw})`)]);
+  }
+  if (r.tag === 'add' && r.oi != null) A.push(['Xóa lối thêm tay này', () => { const it = ovr.add_edges[r.oi]; change(`Xóa lối thêm "${it.note || ''}"`,
+      () => ovr.add_edges.splice(ovr.add_edges.indexOf(it), 1), () => ovr.add_edges.push(it)); }]);
+  html += A.map((a, i) => `<button data-a="${i}">${esc(a[0])}</button>`).join('') + '</div></div>';
+  const pop = L.popup({maxWidth: 260}).setLatLng(at).setContent(html).openOn(map);
+  pop.getElement().querySelectorAll('button[data-a]').forEach(b => b.onclick = () => A[+b.dataset.a][1]());
+}
+
+// ---------- Vẽ lối tắt ----------
+let drawing = false, pts = [];
+function setDrawing(on) {
+  drawing = on; pts = []; gDraw.clearLayers();
+  $('drawBox').style.display = on ? 'block' : 'none';
+  $('bDraw').classList.toggle('on', on);
+  map.getContainer().classList.toggle('drawing', on);
+}
+function redrawDraft() {
+  gDraw.clearLayers();
+  if (pts.length) L.polyline(pts, {color: '#c800c8', weight: 4, dashArray: '6 4'}).addTo(gDraw);
+  pts.forEach(p => L.circleMarker(p, {radius: 5, color: '#c800c8', fillOpacity: 1}).addTo(gDraw));
+  $('drawInfo').textContent = `${pts.length} điểm. Bấm lên bản đồ để thêm (đầu và cuối nên chạm vào đường có sẵn).`;
+}
+$('bDraw').onclick = () => setDrawing(!drawing);
+$('dCancel').onclick = () => setDrawing(false);
+$('dUndo').onclick = () => { pts.pop(); redrawDraft(); };
+map.on('click', e => { if (!drawing) return; pts.push([r6(e.latlng.lat), r6(e.latlng.lng)]); redrawDraft(); });
+$('dOk').onclick = () => {
+  if (pts.length < 2) { $('drawInfo').textContent = 'Cần ít nhất 2 điểm.'; return; }
+  const item = {coords: pts.slice(), mode: $('dMode').value, oneway: $('dOne').checked, note: $('dNote').value.trim()};
+  pushList('add_edges', item, `Thêm lối tắt ${item.note ? '"' + item.note + '" ' : ''}(${item.coords.length} điểm, ${item.mode})`);
+  L.polyline(item.coords, {color: '#c800c8', weight: 4}).addTo(gRoad);
+  $('dNote').value = ''; setDrawing(false);
+};
+
+// ---------- Lưu ----------
+const json = () => JSON.stringify(ovr, null, 2) + '\n';
+$('bSave').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([json()], {type: 'application/json'}));
+  a.download = 'overrides.json'; document.body.appendChild(a); a.click(); a.remove();
+};
+$('bCopy').onclick = () => navigator.clipboard.writeText(json()).then(() => $('bCopy').textContent = 'Đã sao chép ✓').catch(() => {});
+$('bUndo').onclick = () => { const h = history.pop(); if (h) { h.undo(); refreshChanges(); } };
+window.addEventListener('beforeunload', e => { if (history.length) { e.preventDefault(); e.returnValue = ''; } });
+
+$('mMoto').onclick = () => { mode = 'moto'; $('mMoto').classList.add('pri'); $('mWalk').classList.remove('pri'); render(); };
+$('mWalk').onclick = () => { mode = 'walk'; $('mWalk').classList.add('pri'); $('mMoto').classList.remove('pri'); render(); };
+
+const dep = D.lobbies.find(o => o.depot);
+map.fitBounds(L.latLngBounds(D.lobbies.map(o => o.ll)).pad(0.15));
+render(); map.fire('zoomend');
+</script></body></html>
