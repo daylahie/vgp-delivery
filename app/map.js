@@ -53,13 +53,16 @@
     return {
       bg: v('--map-bg'), road: v('--map-road'), edge: v('--map-road-edge'), major: v('--map-major'), walk: v('--map-walk'),
       bld: v('--map-bld'), bldEdge: v('--map-bld-edge'), lbl: v('--map-lbl'), bnd: v('--map-bnd'),
-      route: v('--route'), done: v('--route-done'), depot: v('--depot'), ok: v('--ok'), card: v('--card'), fg: v('--fg'),
+      route: v('--route'), done: v('--route-done'), depot: v('--depot'), card: v('--card'), fg: v('--fg'),
+      pinText: v('--acc-fg'),
     };
   }
 
   class VgpMap {
-    constructor(el) {
+    constructor(el, opts = {}) {
       this.el = el;
+      this.interactive = opts.interactive !== false;   // bản đồ thu nhỏ: chỉ chạm để mở toàn màn hình
+      this.onTap = opts.onTap || null;
       this.cv = document.createElement('canvas');
       el.prepend(this.cv);
       this.ctx = this.cv.getContext('2d');
@@ -69,7 +72,8 @@
       this.ro = new ResizeObserver(() => this.resize());
       this.ro.observe(el);
       matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { this.colors = css(); this.draw(); });
-      this.bindGestures();
+      if (this.interactive) this.bindGestures();
+      else this.cv.addEventListener('click', () => this.onTap && this.onTap());
       this.resize();
       this.fitBase();
     }
@@ -183,7 +187,7 @@
           const ls = R.legState[i] || 'todo';
           if (ls !== st || leg.length < 2) return;
           this.path(leg);
-          c.strokeStyle = '#fff'; c.lineWidth = st === 'next' ? 10 : 8; c.globalAlpha = .9; c.stroke(); c.globalAlpha = 1;
+          c.strokeStyle = C.card; c.lineWidth = st === 'next' ? 10 : 8; c.globalAlpha = .9; c.stroke(); c.globalAlpha = 1;
           this.path(leg);
           c.strokeStyle = st === 'done' ? C.done : C.route; c.lineWidth = st === 'next' ? 7 : 5;
           if (st === 'todo' && R.legState.length) c.globalAlpha = .55;
@@ -197,17 +201,20 @@
       for (const st of stops) {
         const [x, y] = this.toScreen(st.p);
         if (st.kind === 'depot') {
-          c.fillStyle = C.depot; c.strokeStyle = '#fff'; c.lineWidth = 3;
-          c.beginPath(); c.roundRect ? c.roundRect(x - 15, y - 15, 30, 30, 7) : c.rect(x - 15, y - 15, 30, 30); c.fill(); c.stroke();
-          c.fillStyle = '#fff'; c.font = '800 12px -apple-system,system-ui,sans-serif'; c.fillText('XP', x, y + .5);
+          // điểm xuất phát: tròn đậm có hình ngôi nhà
+          c.fillStyle = C.depot; c.strokeStyle = C.card; c.lineWidth = 3;
+          c.beginPath(); c.arc(x, y, 15, 0, Math.PI * 2); c.fill(); c.stroke();
+          c.fillStyle = C.card; c.beginPath();
+          c.moveTo(x, y - 7); c.lineTo(x + 7, y - 1); c.lineTo(x + 5, y - 1); c.lineTo(x + 5, y + 6);
+          c.lineTo(x - 5, y + 6); c.lineTo(x - 5, y - 1); c.lineTo(x - 7, y - 1); c.closePath(); c.fill();
           continue;
         }
         const big = st.kind === 'next', r = big ? 17 : 13;
-        if (big) { c.beginPath(); c.arc(x, y, r + 7, 0, Math.PI * 2); c.fillStyle = C.route + '44'; c.fill(); }
+        if (big) { c.beginPath(); c.arc(x, y, r + 8, 0, Math.PI * 2); c.globalAlpha = .25; c.fillStyle = C.route; c.fill(); c.globalAlpha = 1; }
         c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2);
         c.fillStyle = st.kind === 'done' ? C.done : C.route; c.fill();
-        c.lineWidth = 3; c.strokeStyle = '#fff'; c.stroke();
-        c.fillStyle = '#fff'; c.font = `800 ${big ? 15 : 12}px -apple-system,system-ui,sans-serif`;
+        c.lineWidth = 3; c.strokeStyle = C.card; c.stroke();
+        c.fillStyle = C.pinText; c.font = `800 ${big ? 15 : 12}px -apple-system,system-ui,sans-serif`;
         c.fillText(st.label, x, y + .5);
         if (this.s > 0.35 && st.id) {
           c.font = '700 12px -apple-system,system-ui,sans-serif'; c.lineWidth = 4; c.strokeStyle = C.card;
@@ -219,7 +226,7 @@
     arrows(leg, every) {
       const c = this.ctx, pts = leg.map(p => this.toScreen(p));
       let acc = every / 2;
-      c.fillStyle = '#fff';
+      c.fillStyle = this.colors.card;
       for (let i = 0; i < pts.length - 1; i++) {
         const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], d = Math.hypot(x1 - x0, y1 - y0);
         let t = acc;
