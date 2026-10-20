@@ -74,6 +74,14 @@ Thư mục `app/` là toàn bộ app. Thử trên Mac:
 cd app && python3 -m http.server 8000     # mở http://localhost:8000
 ```
 
+### Thêm bớt tòa
+
+- Màn "Chọn tòa": các tòa đã chọn hiện thành chip phía trên danh sách khu, chạm một chip để bỏ tòa đó.
+- Màn lộ trình (trước khi giao): vuốt trái một tòa rồi bấm "Bỏ" để loại khỏi lộ trình; đường đi tính lại ngay.
+- Khi đang giao: vuốt trái một tòa chưa giao rồi bấm "Bỏ" (vd. khách báo bận). Tòa đang giao giữ nguyên ở đầu, các tòa còn lại
+  được sắp lại cho ngắn nhất rồi về cổng đã chọn. Tòa đã bỏ nằm ở mục "Đã bỏ khỏi chuyến" với nút "Thêm lại";
+  nút "+ Thêm tòa" thêm tòa mới vào chuyến (có ô tìm, chọn được nhiều tòa).
+
 ### Vị trí trực tiếp
 
 Khi bấm "Bắt đầu giao" app bật GPS (tắt ngay khi kết thúc chuyến). Chấm xanh có hướng khi đang di chuyển, xám khi mất tín hiệu.

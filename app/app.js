@@ -1,7 +1,7 @@
 /* Giao VGP – giao diện. Dữ liệu: data/data.json (sinh bởi pipeline/04_build_matrix.py) */
 (function () {
   'use strict';
-  const APP_VERSION = '1.4.0';
+  const APP_VERSION = '1.4.1';
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
   const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd')
@@ -47,7 +47,7 @@
     const t = $('toast'); t.textContent = msg; t.classList.add('on');
     clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), ms);
   }
-  function sheet(html, mount) { $('sheet').innerHTML = html; $('modal').classList.add('on'); if (mount) mount($('sheet')); }
+  function sheet(html, mount) { $('toast').classList.remove('on'); $('sheet').innerHTML = html; $('modal').classList.add('on'); if (mount) mount($('sheet')); }
   const closeSheet = () => $('modal').classList.remove('on');
   $('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeSheet(); });
   function ask(title, msg, okText, onOk) {
@@ -324,6 +324,8 @@
     const n = S.sel.size;
     $('selInfo').textContent = n ? `Đã chọn ${n} tòa` : 'Chưa chọn tòa nào';
     $('bClear').style.visibility = n ? 'visible' : 'hidden';
+    $('selTray').innerHTML = [...S.sel].sort((a, b) => IDX[a] - IDX[b])
+      .map(id => `<button class="chip" data-id="${esc(id)}" aria-label="Bỏ chọn ${esc(id)}">${esc(id)}<span class="x">×</span></button>`).join('');
     $('bSolve').disabled = !n;
     $('bSolve').textContent = n ? `Tính lộ trình · ${n} tòa` : 'Tính lộ trình';
     renderPresets();
@@ -343,6 +345,10 @@
     } else return;
     LS.set('sel', [...S.sel]);
     renderPick();
+  });
+  $('selTray').addEventListener('click', e => {
+    const c = e.target.closest('.chip'); if (!c) return;
+    S.sel.delete(c.dataset.id); LS.set('sel', [...S.sel]); renderPick();
   });
   $('q').addEventListener('input', renderPick);
   $('bClear').onclick = () => { S.sel.clear(); LS.set('sel', []); renderPick(); };
@@ -414,6 +420,40 @@
       ${leg != null ? `<span class="leg">${fmtDist(leg)}</span>` : ''}</div>`;
   }
 
+  // Vuốt trái một dòng để hiện nút "Bỏ" (chạm vào nút thì bỏ tòa đó)
+  const SWIPE_W = 84;
+  const swipeRow = (rowHtml, id) => `<div class="swipe"${id ? ` data-id="${esc(id)}"` : ''}>${id ? '<button class="swipe-act">Bỏ</button>' : ''}${rowHtml}</div>`;
+  function bindSwipe(root, onRemove) {
+    let g = null;
+    const closeAll = except => root.querySelectorAll('.swipe.open').forEach(w => { if (w !== except) w.classList.remove('open'); });
+    root.addEventListener('pointerdown', e => {
+      const w = e.target.closest('.swipe[data-id]');
+      if (!w || e.target.closest('.swipe-act')) return;
+      closeAll(w);
+      g = {w, row: w.querySelector('.stop'), x0: e.clientX, y0: e.clientY, base: w.classList.contains('open') ? -SWIPE_W : 0, drag: false, off: 0, pid: e.pointerId};
+    });
+    root.addEventListener('pointermove', e => {
+      if (!g || e.pointerId !== g.pid) return;
+      const dx = e.clientX - g.x0, dy = e.clientY - g.y0;
+      if (!g.drag) {
+        if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+        g.drag = true; g.row.style.transition = 'none'; g.row.setPointerCapture(e.pointerId);
+      }
+      g.off = Math.max(-SWIPE_W - 24, Math.min(0, g.base + dx));
+      g.row.style.transform = `translateX(${g.off}px)`;
+    });
+    const end = e => {
+      if (!g || e.pointerId !== g.pid) return;
+      const {w, row, drag, off, base} = g; g = null;
+      row.style.transition = ''; row.style.transform = '';
+      if (drag) w.classList.toggle('open', off < -SWIPE_W / 2);
+      else if (base) w.classList.remove('open');   // chạm vào dòng đang mở thì đóng lại
+    };
+    root.addEventListener('pointerup', end);
+    root.addEventListener('pointercancel', end);
+    root.addEventListener('click', e => { const a = e.target.closest('.swipe-act'); if (a) onRemove(a.closest('.swipe').dataset.id); });
+  }
+
   function renderPlan() {
     const R = S.route;
     if (![R.start, R.end, ...R.order].every(id => id in IDX)) { S.route = null; LS.del('route'); return renderGo(); }
@@ -423,9 +463,22 @@
     $('gateTxt').textContent = gateText(R.start, R.end);
     $('pDist').textContent = fmtDist(R.cost);
     $('pMeta').textContent = `· khoảng ${fmtMin(travelMin(R.cost, R.mode) + n * S.settings.stopMin)} · ${n} tòa`;
-    $('planList').innerHTML = seq.map((id, i) => stopRow(id, i, i === seq.length - 1, i ? dist(R.mode, seq[i - 1], id) : null)).join('');
+    $('planList').innerHTML = seq.map((id, i) => {
+      const last = i === seq.length - 1;
+      return swipeRow(stopRow(id, i, last, i ? dist(R.mode, seq[i - 1], id) : null), i && !last ? id : null);
+    }).join('');
     showMini('plan', 'mapPlan', routeData(R.mode, seq));
   }
+  async function removeFromPlan(id) {
+    const R = S.route; if (!R || editing) return;
+    editing = true;
+    S.sel.delete(id); LS.set('sel', [...S.sel]);
+    const ids = R.sel.filter(x => x !== id);
+    if (ids.length) await computeRoute(R.mode, ids); else { S.route = null; LS.del('route'); }
+    editing = false;
+    renderGo(); renderPick(); toast(`Đã bỏ ${id}`);
+  }
+  bindSwipe($('planList'), removeFromPlan);
   $('modeSeg').addEventListener('click', async e => {
     const b = e.target.closest('button'); if (!b || !S.route || b.dataset.m === S.route.mode) return;
     S.mode = b.dataset.m; LS.set('mode', S.mode);
@@ -484,8 +537,12 @@
     $('tripList').innerHTML = seq.map((id, i) => {
       const last = i === seq.length - 1, isDone = i > 0 && !last && st.done.has(id);
       const cls = isDone ? 'done' : (id === st.next && i > 0 && !last) || (!st.next && last) ? 'cur' : '';
-      return stopRow(id, i, last, i ? dist(T.mode, seq[i - 1], id) : null, cls);
+      return swipeRow(stopRow(id, i, last, i ? dist(T.mode, seq[i - 1], id) : null, cls), i && !last && !isDone ? id : null);
     }).join('');
+    const sk = (T.skipped || []).filter(id => id in IDX);
+    $('skipSec').style.display = $('skipList').style.display = sk.length ? '' : 'none';
+    $('skipList').innerHTML = sk.map(id => `<div class="stop"><span class="num">–</span><div><div class="id">${esc(id)}</div><div class="z">${esc(B(id).zone)}</div></div>
+      <button class="link" data-add="${esc(id)}" style="margin-left:auto">Thêm lại</button></div>`).join('');
     const rd = routeData(T.mode, seq, st.next, st.done);
     rd.nextId = st.next; rd.nextLeg = st.next ? dist(T.mode, st.cur, st.next) : null;
     const li = rd.legState.indexOf('next');
@@ -494,6 +551,51 @@
     showMini('trip', 'mapTrip', rd);
     updateLive(true);
   }
+  // Bỏ hoặc thêm tòa khi đang giao. Tòa đang giao giữ nguyên ở đầu; các tòa còn lại sắp lại cho ngắn nhất rồi về cổng.
+  let editing = false;
+  async function editTrip({remove = [], add = []}) {
+    if (editing || !S.trip) return;
+    editing = true;
+    try {
+      const st = tripState(), T = st.T, before = remaining(st);
+      const skipped = (T.skipped || []).filter(id => !add.includes(id));
+      remove.forEach(id => { if (!skipped.includes(id)) skipped.push(id); });
+      const left = st.left.filter(id => !remove.includes(id)).concat(add.filter(id => !st.left.includes(id) && !T.done.includes(id)));
+      const keep = left.includes(st.next) ? st.next : null;
+      const r = keep ? await solve(T.mode, keep, T.end, left.filter(id => id !== keep)) : await solve(T.mode, st.cur, T.end, left);
+      T.order = [...T.done, ...(keep ? [keep] : []), ...r.order]; T.skipped = skipped;
+      LS.set('trip', T); offWatch.reset(); renderGo();
+      const after = remaining(tripState());
+      toast((remove.length ? `Đã bỏ ${remove.join(', ')}` : `Đã thêm ${add.join(', ')}`) +
+        (after < before - 5 ? ` · ngắn hơn ${fmtDist(before - after)}` : ` · còn ${fmtDist(after)}`));
+    } catch (err) { toast('Không tính được: ' + err.message); }
+    editing = false;
+  }
+  bindSwipe($('tripList'), id => editTrip({remove: [id]}));
+  $('skipList').addEventListener('click', e => { const b = e.target.closest('[data-add]'); if (b) editTrip({add: [b.dataset.add]}); });
+  $('bAdd').onclick = () => {
+    const have = new Set(S.trip.order), pick = new Set();
+    const cand = D.buildings.filter(b => b.id !== D.depot && !have.has(b.id));
+    sheet(`<h3>Thêm tòa vào chuyến</h3>
+      <input type="search" id="aQ" placeholder="Tìm tòa, vd. S3.03" autocomplete="off" autocorrect="off" autocapitalize="characters" style="margin-bottom:10px">
+      <div class="pickl" id="aList"></div>
+      <button class="btn" id="mOk" disabled>Thêm</button><button class="btn ghost" id="mNo">Đóng</button>`, el => {
+      const list = el.querySelector('#aList'), ok = el.querySelector('#mOk'), q = el.querySelector('#aQ');
+      const draw = () => {
+        list.innerHTML = cand.filter(matchQ(norm(q.value))).map(b => `<div class="item${pick.has(b.id) ? ' on' : ''}" data-id="${esc(b.id)}"><span class="ck"></span>
+          <div><div class="id">${esc(b.id)}</div><div class="nm">${esc(b.zone)}</div></div></div>`).join('') || '<div class="mut small" style="padding:14px 4px">Không có tòa phù hợp</div>';
+        ok.disabled = !pick.size; ok.textContent = pick.size ? `Thêm ${pick.size} tòa` : 'Thêm';
+      };
+      q.addEventListener('input', draw);
+      list.addEventListener('click', e => {
+        const it = e.target.closest('.item'); if (!it) return;
+        pick.has(it.dataset.id) ? pick.delete(it.dataset.id) : pick.add(it.dataset.id); draw();
+      });
+      el.querySelector('#mNo').onclick = closeSheet;
+      ok.onclick = () => { closeSheet(); editTrip({add: [...pick]}); };
+      draw();
+    });
+  };
   $('bDone').onclick = () => {
     const st = tripState();
     if (!st.next) return endTrip();
@@ -663,6 +765,7 @@
     [...S.sel].forEach(id => { if (!(id in IDX) || id === D.depot) S.sel.delete(id); });
     for (const o of [S.route, S.trip]) if (o) { o.start = o.start || D.depot; o.end = o.end || D.depot; }   // lộ trình lưu từ bản cũ
     if (S.trip && ![S.trip.start, S.trip.end, ...S.trip.order].every(id => id in IDX)) { S.trip = null; LS.del('trip'); }
+    if (S.trip && S.trip.skipped) S.trip.skipped = S.trip.skipped.filter(id => id in IDX);
     renderPick();
     $('tripDot').classList.toggle('on', !!S.trip);
     if (S.trip) { $('tripDot').textContent = S.trip.order.length - S.trip.done.length || '✓'; show('s-go'); syncGps(); }
