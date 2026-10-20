@@ -57,8 +57,10 @@ def zone_by_id(i):
     pre, blk = m.group(1), int(m.group(2) or 0)
     if pre == "S":
         return "The Rainbow" if blk <= 5 else "The Origami"
-    return {"BE": "The Beverly", "BS": "The Beverly Solari", "GH": "Glory Heights",
-            "OS": "The Oasis", "MCP": "Masteri Centre Point", "LUM": "Lumière Boulevard"}.get(pre, "")
+    if pre == "BS":   # Beverly Solari gồm The Sunset (BS1–6), The Tropical (BS7–10), The Oasis (BS11–16); khớp mô tả của khối nhà OSM
+        return "The Sunset" if blk <= 6 else "The Tropical" if blk <= 10 else "The Oasis"
+    return {"BE": "The Beverly", "GH": "Glory Heights", "OS": "The Opus One",
+            "MCP": "Masteri Centre Point", "LUM": "Lumière Boulevard"}.get(pre, "")
 
 
 # ---------------------------------------------------------------------------

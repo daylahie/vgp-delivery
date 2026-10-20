@@ -33,7 +33,7 @@ OTHER_MARGIN = 5.0      # m – gần khối của tòa khác hơn khối của 
 UNNAMED_MIN_AREA = 900  # m² – khối không tên đủ lớn để nghi là một tòa
 
 # Số tòa theo các trang giới thiệu dự án (vinhome.com.vn, grandpark-vinhomes.com, batdongsan.com.vn)
-EXPECTED_COUNTS = {"The Rainbow": 17, "The Origami": 21, "Glory Heights": 5}
+EXPECTED_COUNTS = {"The Rainbow": 17, "The Origami": 21, "Glory Heights": 5, "The Opus One": 4, "The Tropical": 4, "The Oasis": 4}
 
 # Khối OSM không tên đã xem và biết không phải tòa ở
 KNOWN_NON_TOWER = {1502828961: "khối hình chữ nhật gần S10.02, nhiều khả năng là khối thương mại"}

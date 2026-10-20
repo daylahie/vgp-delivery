@@ -240,7 +240,7 @@ def main():
         "aliases": [a.strip() for a in r["aliases"].split(";") if a.strip()], "note": r["note"],
     } for r in rows]
 
-    h = hashlib.sha1(json.dumps([ids, {m: modes[m]["dist"] for m in MODES}]).encode()).hexdigest()[:6]
+    h = hashlib.sha1(json.dumps([buildings, GATES, {m: modes[m]["dist"] for m in MODES}], ensure_ascii=False).encode()).hexdigest()[:6]
     data = {
         "version": f"{datetime.now():%Y.%m.%d}-{h}", "generated": datetime.now().isoformat(timespec="seconds"),
         "depot": depot, "gates": GATES, "buildings": buildings, "zones": zones, "defaults": DEFAULTS,

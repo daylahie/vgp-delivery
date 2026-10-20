@@ -38,6 +38,16 @@ python3 pipeline/02_build_buildings.py --check  # kiểm tra nghiệm thu
 
 Chạy lại script không làm mất dòng đã kiểm tra, dòng chỉnh tay và dòng thấp tầng.
 
+### Sửa vị trí sảnh trực tiếp trên máy tính
+
+1. Mở `tools/lobby_editor.html` bằng Chrome/Safari (cần mạng để tải ảnh vệ tinh Esri; bản nháp tự nạp, hoặc "Mở CSV…" chọn `data/buildings.csv`).
+2. Pin tô màu theo nguồn: xanh lá = sảnh OSM, cam = điểm OSM, đỏ = ước lượng, xanh dương = đặt tay; viền nét đứt = chưa bấm "Đã kiểm tra".
+   Tích "chưa đặt tay" để chỉ xem các điểm chưa ai xác nhận.
+3. Chọn một tòa, kéo ghim tới đúng chỗ dừng xe/lối vào trên ảnh vệ tinh (hoặc bấm một điểm gợi ý OSM), sửa tên phân khu/ghi chú nếu cần,
+   rồi bấm "Đã kiểm tra & sang điểm kế". Thêm tòa còn thiếu bằng "+ Thêm điểm" (đổi Loại thành Cao tầng).
+4. "Xuất CSV" → chép đè file tải về vào `data/buildings.csv` → `sh pipeline/build_all.sh` (tự kiểm tra chéo, dựng lại đường và ma trận) →
+   `git add -A && git commit -m "Sửa sảnh" && git push`.
+
 ## Giai đoạn 3 – Mạng đường
 
 ```bash

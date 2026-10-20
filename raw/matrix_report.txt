@@ -1,6 +1,6 @@
-BÁO CÁO MA TRẬN KHOẢNG CÁCH – 2026-10-20 08:05
+BÁO CÁO MA TRẬN KHOẢNG CÁCH – 2026-10-20 08:50
 
-Phiên bản dữ liệu: 2026.10.20-bf8c47
+Phiên bản dữ liệu: 2026.10.20-f12719
 Số điểm: 71 · kích thước app/data/data.json: 0.63 MB (giới hạn 8 MB)
 [moto] cặp không tới được: 0
 [walk] cặp không tới được: 0

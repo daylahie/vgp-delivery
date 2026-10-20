@@ -1,7 +1,7 @@
-DANH MỤC ĐIỂM GIAO – 2026-10-20 08:04
+DANH MỤC ĐIỂM GIAO – 2026-10-20 08:49
 
 Tổng số điểm trong buildings.csv: 71 (cao tầng 71, thấp tầng 0)
-Giữ nguyên từ lần trước (đã kiểm tra / chỉnh tay): 68
+Giữ nguyên từ lần trước (đã kiểm tra / chỉnh tay): 71
 
 Nguồn sảnh nháp của các tòa từ OSM:
   - điểm OSM ghi rõ 'Sảnh': 2 → S3.01, S3.02
@@ -13,10 +13,11 @@ Theo phân khu:
   - Lumière Boulevard: 5
   - Masteri Centre Point: 5
   - The Beverly: 6
-  - The Beverly Solari: 8
   - The Oasis: 4
+  - The Opus One: 4
   - The Origami: 21
   - The Rainbow: 17
+  - The Tropical: 4
 
 Cảnh báo sảnh xa đường > 50 m: 0
 
