@@ -27,6 +27,9 @@ OUT = os.path.join(ROOT, "app", "data", "data.json")
 REPORT = os.path.join(ROOT, "raw", "matrix_report.txt")
 MODES = ("moto", "walk")
 DEFAULTS = {"speed_kmh": {"moto": 20, "walk": 4.5}, "stop_min": 3}
+# Cổng ra vào hầm xe: các tòa dùng chung một hầm, xuất phát hoặc quay về ở cổng nào cũng được.
+# Mục đầu tiên phải là điểm xuất phát mặc định (is_depot=1). Thêm tòa thông hầm vào đây là đủ.
+GATES = ["S3.03", "S3.01"]
 SIMPLIFY_M = 2.0       # sai số giản lược tuyến (m)
 MAP_SIMPLIFY_M = 1.5   # sai số giản lược lớp nền (m)
 SIZE_LIMIT_MB = 8.0
@@ -214,6 +217,9 @@ def main():
     ids = [r["id"] for r in rows]
     depot = next(r["id"] for r in rows if r["is_depot"] == "1")
     print(f"{len(ids)} điểm giao, điểm xuất phát {depot}")
+    bad = [g for g in GATES if g not in ids]
+    if bad or GATES[0] != depot:
+        sys.exit(f"GATES phải bắt đầu bằng {depot} và gồm các tòa có trong danh mục (sai: {bad or GATES[0]})")
 
     modes, unreach = {}, {}
     for m in MODES:
@@ -237,7 +243,7 @@ def main():
     h = hashlib.sha1(json.dumps([ids, {m: modes[m]["dist"] for m in MODES}]).encode()).hexdigest()[:6]
     data = {
         "version": f"{datetime.now():%Y.%m.%d}-{h}", "generated": datetime.now().isoformat(timespec="seconds"),
-        "depot": depot, "buildings": buildings, "zones": zones, "defaults": DEFAULTS,
+        "depot": depot, "gates": GATES, "buildings": buildings, "zones": zones, "defaults": DEFAULTS,
         "modes": modes, "map": mp,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
