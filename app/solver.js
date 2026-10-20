@@ -3,6 +3,7 @@
  * - ≤ 12 điểm giao: Held–Karp (tối ưu tuyệt đối).
  * - > 12 điểm: Nearest Neighbor + Or-opt + 2-opt (bản an toàn cho ma trận bất đối xứng)
  *   + lặp cục bộ có nhiễu (ILS) với seed cố định.
+ * - solveGates: thử các cặp cổng ra/vào hầm xe dùng chung, chọn cặp tiện nhất.
  * Kết quả xác định: cùng đầu vào luôn cùng đầu ra (không dùng thời gian/Math.random).
  * Dùng được trong Web Worker, trình duyệt và Node (cho test).
  */
@@ -190,7 +191,35 @@
     return {order, cost: pathCost(D, start, end, order), exact};
   }
 
-  const api = {solve, pathCost, heldKarp, heuristic, EXACT_MAX};
+  /**
+   * Như solve, nhưng điểm giao trùng với cổng xuất phát/cổng về vẫn nằm trong thứ tự
+   * (giao ngay tại cổng, 0 m): đứng đầu nếu là cổng xuất phát, đứng cuối nếu là cổng về.
+   */
+  function solveRoute(D, start, end, stops, opts) {
+    const want = [...new Set(stops)];
+    const r = solve(D, start, end, want, opts);
+    const head = want.includes(start) ? [start] : [];
+    const tail = end !== start && want.includes(end) ? [end] : [];
+    return {order: [...head, ...r.order, ...tail], cost: r.cost, exact: r.exact};
+  }
+
+  /**
+   * Các tòa dùng chung một hầm: xuất phát và quay về ở cổng nào cũng được, không tính đoạn đi giữa hai cổng.
+   * Thử mọi cặp (cổng đi, cổng về). alts[0] là cặp mặc định gates[0] → gates[0].
+   * pick = phương án nên dùng: bỏ cặp mặc định chỉ khi có phương án ngắn hơn ít nhất minGain mét.
+   * @returns {{alts:{start:number,end:number,order:number[],cost:number,exact:boolean}[], pick:object}}
+   */
+  function solveGates(D, gates, stops, opts) {
+    opts = opts || {};
+    const minGain = opts.minGain ?? 100;
+    const alts = [];
+    for (const s of gates) for (const e of gates) alts.push(Object.assign({start: s, end: e}, solveRoute(D, s, e, stops, opts)));
+    let best = alts[0];
+    for (const a of alts) if (a.cost < best.cost - 1e-9) best = a;
+    return {alts, pick: best.cost < alts[0].cost - minGain ? best : alts[0]};
+  }
+
+  const api = {solve, solveRoute, solveGates, pathCost, heldKarp, heuristic, EXACT_MAX};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.VGPSolver = api;
 })(typeof self !== 'undefined' ? self : this);

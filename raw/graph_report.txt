@@ -1,10 +1,10 @@
-BÁO CÁO MẠNG ĐƯỜNG – 2026-10-04 08:56
+BÁO CÁO MẠNG ĐƯỜNG – 2026-10-20 08:05
 
 Đường xe máy: 64.0 km (một chiều 11.3 km) · Đường đi bộ: 93.7 km
 Hiệu chỉnh tay: allow_ways=0, oneway_overrides=0, block_edges=0, add_edges=0
 
-[Xe máy] 4718 cạnh có hướng · sảnh liên thông: 70/70 · sạch
-[Đi bộ] 9724 cạnh có hướng · sảnh liên thông: 70/70 · sạch
+[Xe máy] 4722 cạnh có hướng · sảnh liên thông: 71/71 · sạch
+[Đi bộ] 9728 cạnh có hướng · sảnh liên thông: 71/71 · sạch
 
 Sảnh cách đường > 50 m: 1
     - S9.03 (Xe máy): 55.7 m
@@ -22,8 +22,8 @@ LUM-C         27.2    27.2
 LUM-D          0.3     0.3
 LUM-E         19.9    19.9
 MCP-A         24.8    24.8
-MCP-B         23.0    23.0
-MCP-C         22.5    22.5
+MCP-B         36.5    36.5
+MCP-C         34.3    34.3
 MCP-D         23.1    23.1
 MCP-E         11.4    11.4
 BE1           13.4    13.4
@@ -80,6 +80,7 @@ S3.02         11.3     3.2
 S3.03          5.9     5.9
 S3.05         22.0     2.9
 S5.01          2.0     2.0
+S5.02          8.8     8.8
 S5.03         11.0    11.0
 
 Đường bị loại khỏi mạng (trong phạm vi): 7

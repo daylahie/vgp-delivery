@@ -1,6 +1,7 @@
 # VGP Delivery Route
 
 App cá nhân tính lộ trình giao hàng ngắn nhất trong Vinhomes Grand Park (PWA, chạy offline trên iPhone).
+Giao diện tối giản tông be, font Be Vietnam Pro (lưu sẵn trong `app/fonts/`, giấy phép SIL OFL). Bản đồ tự vẽ từ dữ liệu OSM, không cần mạng.
 
 ## Giai đoạn 1 – Tải dữ liệu OSM
 
@@ -49,13 +50,21 @@ python3 pipeline/03_build_graph.py
 ## Giai đoạn 4–5 – Ma trận khoảng cách và bộ giải
 
 ```bash
-sh pipeline/build_all.sh      # chạy lại 02 --check, 03, 04 và test bộ giải
+sh pipeline/build_all.sh      # chạy lại 02 --check, 05 (kiểm tra chéo), 03, 04 và các test
 ```
+
+- `pipeline/05_audit.py` đối chiếu `data/buildings.csv` với khối nhà OSM và số tòa theo nguồn công khai
+  (Rainbow 17, Origami 21, Glory Heights 5): sảnh phải sát khối nhà của chính nó và không gần tòa khác hơn,
+  khối lớn không tên (nghi tòa còn thiếu) được báo. Có lỗi thì `build_all.sh` dừng. Báo cáo ở `raw/audit_report.txt`.
+- Khối OSM chưa gắn tên nhưng đã xác định được mã (vd. S5.02) khai trong `MANUAL_IDS` ở `pipeline/02_build_buildings.py`.
+- Cổng ra vào hầm xe (các tòa dùng chung một hầm) khai trong `GATES` ở `pipeline/04_build_matrix.py`
+  (hiện là `S3.03`, `S3.01`; mục đầu là điểm xuất phát mặc định). App thử mọi cặp cổng đi/về và chọn cặp ngắn nhất;
+  nút "Đổi cổng" trong màn lộ trình cho chọn tay, Cài đặt có công tắc "Tự chọn / Chỉ S3.03".
 
 - `app/data/data.json`: danh sách tòa, ma trận 2 chế độ, hình dạng tuyến, lớp nền bản đồ (~0,6 MB).
 - `raw/matrix_report.txt`: 10 cặp ngẫu nhiên để đối chiếu thực tế + các cặp chênh lệch đi/về.
 - `app/solver.js`: ≤ 12 điểm dùng Held–Karp (tối ưu tuyệt đối); nhiều hơn dùng NN + Or-opt + 2-opt + ILS, kết quả xác định.
-- Test: `node tests/solver.test.js` (cần Node).
+- Test: `node tests/solver.test.js` (bộ giải, cổng ra vào) và `node tests/track.test.js` (chiếu vị trí lên tuyến) – cần Node.
 
 ## Giai đoạn 6–7 – App (PWA)
 
@@ -64,6 +73,14 @@ Thư mục `app/` là toàn bộ app. Thử trên Mac:
 ```bash
 cd app && python3 -m http.server 8000     # mở http://localhost:8000
 ```
+
+### Vị trí trực tiếp
+
+Khi bấm "Bắt đầu giao" app bật GPS (tắt ngay khi kết thúc chuyến). Chấm xanh có hướng khi đang di chuyển, xám khi mất tín hiệu.
+Khoảng cách còn lại tính theo đường đi thật, phần đã đi của chặng tô xám, lệch tuyến hơn 40 m liên tục 10 giây thì gợi ý
+"Tính lại đường", cách sảnh dưới 25 m thì nút "Đã giao xong" sáng lên và rung nhẹ (không tự đánh dấu đã giao).
+Bản đồ toàn màn hình tự bám theo vị trí và giữ sáng màn hình khi đang giao. Vị trí chỉ dùng trên máy, không lưu và không gửi đi đâu.
+Tính toán nằm ở `app/track.js`.
 
 ## Giai đoạn 8 – Đưa lên iPhone (GitHub Pages)
 

@@ -1,7 +1,8 @@
 // Kiểm thử bộ giải: node tests/solver.test.js
 // 1) Held–Karp và heuristic trùng tối ưu vét cạn với n ≤ 9 (ma trận bất đối xứng ngẫu nhiên)
 // 2) Tính xác định: 20 lần chạy cùng đầu vào cho kết quả giống hệt
-// 3) Hiệu năng trên dữ liệu thật (app/data/data.json) – toàn khu
+// 3) Cổng ra vào hầm (solveGates): thử mọi cặp, điểm giao trùng cổng vẫn được giao đúng một lần
+// 4) Hiệu năng trên dữ liệu thật (app/data/data.json) – toàn khu
 'use strict';
 const path = require('path');
 const fs = require('fs');
@@ -60,7 +61,23 @@ const he = S.pathCost(D13, 0, 0, S.heuristic(D13, 0, 0, [...Array(12).keys()].ma
 ok(he >= hk.cost - 1e-6, `Heuristic không tốt hơn tối ưu ở n=12 (${he} ≥ ${hk.cost})`);
 console.log(`     Heuristic lệch tối ưu ở n=12: ${((he / hk.cost - 1) * 100).toFixed(2)}%`);
 
-// 3) Dữ liệu thật
+// 3) Cổng ra vào hầm
+{
+  const D = randMatrix(14, 321), gates = [0, 1], stops = [1, 2, 3, 4, 5, 6, 7, 8, 9];   // điểm 1 vừa là cổng vừa là điểm giao
+  const g = S.solveGates(D, gates, stops, {minGain: 0});
+  ok(g.alts.length === 4 && g.alts[0].start === 0 && g.alts[0].end === 0, 'solveGates: đủ 4 cặp, alts[0] là cặp mặc định');
+  ok(g.alts.every(a => a.order.length === stops.length && new Set(a.order).size === stops.length
+    && stops.every(x => a.order.includes(x))), 'solveGates: mọi phương án giao đủ từng điểm đúng một lần (kể cả điểm trùng cổng)');
+  ok(g.alts.every(a => Math.abs(S.pathCost(D, a.start, a.end, a.order) - a.cost) < 1e-6), 'solveGates: chi phí khai báo = chi phí tính lại từ thứ tự');
+  ok(g.alts.every(a => a.start !== 1 || a.order[0] === 1), 'solveGates: điểm giao trùng cổng xuất phát được giao đầu tiên');
+  ok(g.pick.cost <= Math.min(...g.alts.map(a => a.cost)) + 1e-9, 'solveGates: minGain=0 chọn phương án ngắn nhất');
+  const big = S.solveGates(D, gates, stops, {minGain: 1e9});
+  ok(big.pick === big.alts[0], 'solveGates: lợi ích nhỏ hơn minGain thì giữ cặp mặc định');
+  const one = S.solveGates(D, [0], stops);
+  ok(one.alts.length === 1 && Math.abs(one.pick.cost - S.solve(D, 0, 0, stops).cost) < 1e-6, 'solveGates: một cổng cho kết quả như solve');
+}
+
+// 4) Dữ liệu thật
 const dataPath = path.join(__dirname, '..', 'app', 'data', 'data.json');
 if (fs.existsSync(dataPath)) {
   const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));

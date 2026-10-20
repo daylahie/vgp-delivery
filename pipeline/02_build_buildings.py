@@ -42,6 +42,9 @@ SRC_VALUES = ("osm_sanh", "osm_diem", "uoc_luong", "thu_cong")
 TYPE_VALUES = ("cao_tang", "thap_tang")
 
 KNOWN_PREFIX = {"S", "BE", "BS", "GH", "OS"}
+# Khối nhà OSM chưa gắn tên nhưng đã xác định được mã (đối chiếu hình dáng với nguồn công khai):
+# way 1050209502 là khối chữ Z nằm giữa S5.01 (chữ U) và S5.03 (chữ T) -> S5.02.
+MANUAL_IDS = {1050209502: "S5.02"}
 HINT_EDGE_MAX = 10.0      # m – điểm "Tòa X" cách mép tòa tối đa để coi là sảnh
 HINT_SANH_MAX = 30.0      # m – điểm ghi rõ "Sảnh"
 HINT_SHOW_MAX = 60.0      # m – điểm gợi ý hiển thị trong công cụ
@@ -148,7 +151,7 @@ def outer_ring_xy(el):
 def building_id(tags, areas_xy, c_xy):
     """Suy ra mã chuẩn của một tòa từ tag; None nếu không nhận ra."""
     name = s1.element_label(tags)
-    m = re.search(r"Masteri.*Tower\s*([A-Z])\b", name, re.I)
+    m = re.search(r"\bMasteri\b.*Tower\s*([A-Z])\b", name, re.I)
     if m:
         return "MCP-" + m.group(1).upper()
     m = re.search(r"Lumi.*Tower\s*([A-Z])\b", name, re.I)
@@ -158,7 +161,8 @@ def building_id(tags, areas_xy, c_xy):
     if m and c_xy:  # "Tower B" trơn – xác định dự án theo vùng chứa nó
         for zname, ring in areas_xy:
             if inside(c_xy, ring):
-                if re.search("Masteri", zname, re.I):
+                # \b: tên khu Lumière có chữ "Masterise Homes", không được nhận nhầm là Masteri
+                if re.search(r"\bMasteri\b", zname, re.I):
                     return "MCP-" + m.group(1).upper()
                 if re.search("Lumi", zname, re.I):
                     return "LUM-" + m.group(1).upper()
@@ -275,7 +279,7 @@ def build(els):
         c = centroid_xy(r)
         if not in_vgp(c):
             continue
-        bid = building_id(t, areas_xy, c)
+        bid = building_id(t, areas_xy, c) or MANUAL_IDS.get(e["id"])
         foot_ctx.append({"id": bid or "", "nm": s1.element_label(t),
                          "g": [[round(a, 6), round(b, 6)] for a, b in (ll(q) for q in r)]})
         if bid:

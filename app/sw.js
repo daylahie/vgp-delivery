@@ -1,11 +1,22 @@
 /* Service Worker – cho app chạy offline hoàn toàn sau lần mở đầu.
  * Đổi VER mỗi khi sửa file giao diện để máy tải bản mới.
  * Dữ liệu (data/data.json) nằm ở cache riêng "vgp-data"; app tự kiểm tra phiên bản mới khi có mạng. */
-const VER = '1.3.0';
+const VER = '1.4.0';
 const SHELL = 'vgp-shell-' + VER;
 const DATA = 'vgp-data';
-const FILES = ['./', 'index.html', 'app.js', 'map.js', 'solver.js', 'solver.worker.js', 'manifest.json',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
+const FILES = ['./', 'index.html', 'app.js', 'map.js', 'solver.js', 'track.js', 'solver.worker.js', 'manifest.json',
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'fonts/fonts.css',
+  'fonts/be-vietnam-pro-vietnamese-400-normal.woff2',
+  'fonts/be-vietnam-pro-latin-400-normal.woff2',
+  'fonts/be-vietnam-pro-vietnamese-500-normal.woff2',
+  'fonts/be-vietnam-pro-latin-500-normal.woff2',
+  'fonts/be-vietnam-pro-vietnamese-600-normal.woff2',
+  'fonts/be-vietnam-pro-latin-600-normal.woff2',
+  'fonts/be-vietnam-pro-vietnamese-700-normal.woff2',
+  'fonts/be-vietnam-pro-latin-700-normal.woff2',
+  'fonts/be-vietnam-pro-vietnamese-800-normal.woff2',
+  'fonts/be-vietnam-pro-latin-800-normal.woff2'];
 const abs = p => new URL(p, self.registration.scope).href;
 const DATA_URL = () => abs('data/data.json');
 

@@ -10,8 +10,8 @@ LUM-C,Lumière Boulevard – Tower C,Lumière Boulevard,cao_tang,10.8390940,106.
 LUM-D,Lumière Boulevard – Tower D,Lumière Boulevard,cao_tang,10.8385149,106.8389560,Lumiere D;Lumière D,,0,uoc_luong,1
 LUM-E,Lumière Boulevard – Tower E,Lumière Boulevard,cao_tang,10.8397097,106.8390309,Lumiere E;Lumière E,,0,uoc_luong,1
 MCP-A,Masteri Centre Point – Tower A,Masteri Centre Point,cao_tang,10.8430997,106.8409730,Masteri A;MCP A,,0,osm_diem,1
-MCP-B,Masteri Centre Point – Tower B,Masteri Centre Point,cao_tang,10.8400513,106.8403745,Masteri B;MCP B,"OSM có 2 khối trùng mã, lấy khối lớn nhất",0,uoc_luong,1
-MCP-C,Masteri Centre Point – Tower C,Masteri Centre Point,cao_tang,10.8390296,106.8399140,Masteri C;MCP C,"OSM có 2 khối trùng mã, lấy khối lớn nhất",0,uoc_luong,1
+MCP-B,Masteri Centre Point – Tower B,Masteri Centre Point,cao_tang,10.8410423,106.8398045,Masteri B;MCP B,,0,osm_diem,1
+MCP-C,Masteri Centre Point – Tower C,Masteri Centre Point,cao_tang,10.8424522,106.8413568,Masteri C;MCP C,,0,osm_diem,1
 MCP-D,Masteri Centre Point – Tower D,Masteri Centre Point,cao_tang,10.8409329,106.8406469,Masteri D;MCP D,,0,osm_diem,1
 MCP-E,Masteri Centre Point – Tower E,Masteri Centre Point,cao_tang,10.8422106,106.8402874,Masteri E;MCP E,,0,osm_diem,1
 BE1,Tòa BE1,The Beverly,cao_tang,10.8447760,106.8473752,,,0,uoc_luong,1
@@ -68,4 +68,5 @@ S3.02,Tòa S3.02,The Rainbow,cao_tang,10.8395329,106.8342946,S302;S3-02,Lối h�
 S3.03,Tòa S3.03,The Rainbow,cao_tang,10.8387595,106.8347377,S303;S3-03,Lối hầm xe gần: Hầm xe Tòa nhà S3.03 S3.05 phân khu Rainbow,1,osm_diem,1
 S3.05,Tòa S3.05,The Rainbow,cao_tang,10.8382850,106.8342938,S305;S3-05,Lối hầm xe gần: Hầm xe Tòa nhà S3.03 S3.05 phân khu Rainbow,0,osm_diem,1
 S5.01,Tòa S5.01,The Rainbow,cao_tang,10.8402450,106.8371338,S501;S5-01,,0,uoc_luong,1
-S5.03,Tòa S5.03,The Rainbow,cao_tang,10.8411346,106.8374612,S503;S5-03,,0,uoc_luong,1
+S5.02,Tòa S5.02,The Rainbow,cao_tang,10.8414077,106.8373012,S502;S5-02,"Sảnh ước lượng, chưa xác nhận tại chỗ",0,uoc_luong,1
+S5.03,Tòa S5.03,The Rainbow,cao_tang,10.8411346,106.8374612,S503;S5-03,"Sảnh ước lượng, chưa xác nhận tại chỗ",0,uoc_luong,1
