@@ -70,6 +70,8 @@ nav .dot.on{display:flex}
   background:var(--ink);color:var(--ink-fg);font-size:17px;font-weight:600}
 .btn:disabled{opacity:.35}
 .btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.btn.near{background:var(--acc);color:var(--acc-fg)}                 /* tới gần sảnh */
+.offroute{width:100%;margin-top:10px;padding:12px;border-radius:12px;background:var(--acc-soft);color:var(--acc);font-weight:600;font-size:14px}
 .link{color:var(--acc);font-weight:600;font-size:15px;padding:10px 4px}
 .link.mut{color:var(--mut);font-weight:500}
 .links{display:flex;justify-content:center;gap:28px;margin:8px 0 4px}
@@ -242,6 +244,7 @@ details[open] summary:after{transform:rotate(45deg)}
         <div class="prog"><div class="track"><i id="tBar"></i></div><b id="tProg"></b></div>
         <div class="next" id="tNext"></div>
         <button class="btn" id="bDone"></button>
+        <button class="offroute" id="bOff" style="display:none">Bạn đang lệch tuyến · Tính lại đường</button>
         <div class="links"><button class="link mut" id="bUndo">Hoàn tác</button><button class="link mut" id="bReplan">Tính lại đường</button></div>
         <div class="mapcard" id="mapTrip"></div>
         <div class="card" id="tripList"></div>
@@ -288,6 +291,7 @@ details[open] summary:after{transform:rotate(45deg)}
 <div id="modal"><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div>
 <script src="solver.js"></script>
+<script src="track.js"></script>
 <script src="map.js"></script>
 <script src="app.js"></script>
 </body>

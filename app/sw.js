@@ -4,7 +4,7 @@
 const VER = '1.4.0';
 const SHELL = 'vgp-shell-' + VER;
 const DATA = 'vgp-data';
-const FILES = ['./', 'index.html', 'app.js', 'map.js', 'solver.js', 'solver.worker.js', 'manifest.json',
+const FILES = ['./', 'index.html', 'app.js', 'map.js', 'solver.js', 'track.js', 'solver.worker.js', 'manifest.json',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'fonts/fonts.css',
   'fonts/be-vietnam-pro-vietnamese-400-normal.woff2',

@@ -1,7 +1,9 @@
 /*
  * Bản đồ vector tự vẽ bằng Canvas (không cần ảnh nền, chạy offline).
  * Lớp nền: ranh giới khu, đường, khối nhà, nhãn mã tòa.
- * Lớp lộ trình: tuyến theo thứ tự, mũi tên chiều đi, ghim đánh số, điểm xuất phát, vị trí GPS.
+ * Lớp lộ trình: tuyến theo thứ tự, mũi tên chiều đi, ghim đánh số, điểm xuất phát.
+ * Vị trí GPS: chấm có vòng sai số, hình quạt chỉ hướng khi đang di chuyển, trượt mượt giữa hai lần cập nhật,
+ * chuyển xám khi mất tín hiệu.
  * Cử chỉ: kéo 1 ngón, chụm 2 ngón, chạm đúp để phóng to, cuộn chuột trên máy tính.
  */
 (function () {
@@ -54,7 +56,7 @@
       bg: v('--map-bg'), road: v('--map-road'), edge: v('--map-road-edge'), major: v('--map-major'), walk: v('--map-walk'),
       bld: v('--map-bld'), bldEdge: v('--map-bld-edge'), lbl: v('--map-lbl'), bnd: v('--map-bnd'),
       route: v('--route'), done: v('--route-done'), depot: v('--depot'), card: v('--card'), fg: v('--fg'),
-      pinText: v('--acc-fg'),
+      pinText: v('--acc-fg'), gps: v('--gps'), mut: v('--mut'),
     };
   }
 
@@ -68,7 +70,8 @@
       el.prepend(this.cv);
       this.ctx = this.cv.getContext('2d');
       this.cx = 0; this.cy = 0; this.s = 0.3;   // tâm (m) và tỉ lệ (px/m)
-      this.route = null; this.gps = null; this.pointers = new Map(); this.lastTap = 0;
+      this.route = null; this.gps = null; this.gpsStale = false; this.pointers = new Map(); this.lastTap = 0;
+      this.camAnim = null; this.gpsAnim = null;
       this.colors = css();
       this.ro = new ResizeObserver(() => this.resize());
       this.ro.observe(el);
@@ -92,43 +95,83 @@
     toScreen(p) { return [this.w / 2 + (p[0] - this.cx) * this.s, this.h / 2 - (p[1] - this.cy) * this.s]; }
     toWorld(x, y) { return [this.cx + (x - this.w / 2) / this.s, this.cy - (y - this.h / 2) / this.s]; }
 
-    fitTo(b, pad = 36) {
-      if (!this.w) { this.pendingFit = b; return; }
-      const [[x0, y0], [x1, y1]] = b;
-      this.cx = (x0 + x1) / 2; this.cy = (y0 + y1) / 2;
-      this.s = Math.min((this.w - pad * 2) / Math.max(x1 - x0, 40), (this.h - pad * 2) / Math.max(y1 - y0, 40));
-      this.s = Math.max(0.05, Math.min(this.s, 4));
+    /** Đưa camera tới (cx, cy, s); animate = trượt mượt thay vì nhảy. */
+    camTo(cx, cy, s, animate) {
+      if (!animate || !this.w) { this.camAnim = null; this.cx = cx; this.cy = cy; this.s = s; this.draw(); return; }
+      this.camAnim = {cx0: this.cx, cy0: this.cy, s0: this.s, cx1: cx, cy1: cy, s1: s, t0: performance.now(), dur: 550};
       this.draw();
     }
+    fitTo(b, pad = 36, animate = false) {
+      if (!this.w) { this.pendingFit = b; return; }
+      const [[x0, y0], [x1, y1]] = b;
+      const s = Math.min((this.w - pad * 2) / Math.max(x1 - x0, 40), (this.h - pad * 2) / Math.max(y1 - y0, 40));
+      this.camTo((x0 + x1) / 2, (y0 + y1) / 2, Math.max(0.05, Math.min(s, 4)), animate);
+    }
     fitBase() { this.fitTo(BASE.bounds, 10); }
-    fitRoute() {
+    /** Vừa khung với cả lộ trình; nếu lộ trình có `focus` (chặng đang đi) thì chỉ vừa chặng đó và vị trí của mình. */
+    fitRoute(animate = false) {
       if (!this.route) return this.fitBase();
-      const pts = this.route.legs.flat().concat(this.route.stops.map(s => s.p));
+      const R = this.route;
+      const pts = R.focus ? R.focus.concat(this.gps ? [this.gps.target] : []) : R.legs.flat().concat(R.stops.map(s => s.p));
       if (!pts.length) return this.fitBase();
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       pts.forEach(([x, y]) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); });
-      this.fitTo([[x0, y0], [x1, y1]], 40);
+      this.fitTo([[x0, y0], [x1, y1]], 40, animate);
     }
-    centerOn(lat, lon, minScale) {
+    /** Chấm GPS ra gần mép khung thì vừa lại khung (dùng cho bản đồ nhỏ không tự bám theo). */
+    keepGpsInView() {
+      if (!this.gps || !this.w) return;
+      const [x, y] = this.toScreen(this.gps.target);
+      if (x < 30 || y < 30 || x > this.w - 30 || y > this.h - 30) this.fitRoute(true);
+    }
+    /** Đặt vị trí của mình vào giữa bản đồ (giữ mức phóng hiện tại, tối thiểu minScale). */
+    centerOn(lat, lon, minScale, animate = false) {
       const [x, y] = P(lat, lon);
-      this.cx = x; this.cy = y;
-      if (minScale) this.s = Math.max(this.s, minScale);
-      this.draw();
+      this.camTo(x, y, minScale ? Math.max(this.s, minScale) : this.s, animate);
     }
 
-    /** route = {legs:[[[lat,lon],...]...], legState:['done'|'next'|'todo'], stops:[{lat,lon,label,kind}]} */
+    /** route = {legs:[[[lat,lon],...]...], legState:['done'|'next'|'todo'], stops:[{lat,lon,label,kind}], focus?:[[lat,lon],...]} */
     setRoute(r) {
       this.route = r ? {
         legs: r.legs.map(PL), legState: r.legState || [],
         stops: r.stops.map(s => Object.assign({}, s, {p: P(s.lat, s.lon)})),
+        focus: r.focus && r.focus.length ? PL(r.focus) : null,
       } : null;
       this.draw();
     }
-    setGps(g) { this.gps = g ? Object.assign({}, g, {p: P(g.lat, g.lon)}) : null; this.draw(); }
+    /** g = {lat, lon, acc, heading?} hoặc null. Chấm trượt mượt từ chỗ cũ sang chỗ mới. */
+    setGps(g) {
+      if (!g) { this.gps = null; this.gpsAnim = null; this.draw(); return; }
+      const to = P(g.lat, g.lon), from = this.gps ? this.gps.p : to;
+      this.gps = Object.assign({}, g, {p: from, target: to});
+      this.gpsStale = false;
+      this.gpsAnim = {from, to, t0: performance.now(), dur: 700};
+      this.draw();
+    }
+    setGpsStale(on) { if (this.gpsStale !== on) { this.gpsStale = on; this.draw(); } }
+
+    /** Tiến các hiệu ứng trượt (camera, chấm GPS); còn chạy thì xin vẽ tiếp. */
+    step(now) {
+      const ease = t => 1 - Math.pow(1 - t, 3);
+      let more = false;
+      const a = this.camAnim;
+      if (a) {
+        const t = Math.min(1, (now - a.t0) / a.dur), e = ease(t);
+        this.cx = a.cx0 + (a.cx1 - a.cx0) * e; this.cy = a.cy0 + (a.cy1 - a.cy0) * e; this.s = a.s0 + (a.s1 - a.s0) * e;
+        if (t >= 1) this.camAnim = null; else more = true;
+      }
+      const g = this.gpsAnim;
+      if (g && this.gps) {
+        const t = Math.min(1, (now - g.t0) / g.dur), e = ease(t);
+        this.gps.p = [g.from[0] + (g.to[0] - g.from[0]) * e, g.from[1] + (g.to[1] - g.from[1]) * e];
+        if (t >= 1) this.gpsAnim = null; else more = true;
+      }
+      return more;
+    }
 
     draw() {
       if (this.raf || !this.w) return;
-      this.raf = requestAnimationFrame(() => { this.raf = 0; this.render(); });
+      this.raf = requestAnimationFrame(now => { this.raf = 0; const more = this.step(now); this.render(); if (more) this.draw(); });
     }
 
     path(pts, close) {
@@ -172,19 +215,27 @@
       }
       // lộ trình
       if (this.route) this.renderRoute();
-      // GPS
-      if (this.gps) {
-        const [x, y] = this.toScreen(this.gps.p), r = Math.max(8, (this.gps.acc || 0) * s);
-        c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fillStyle = '#0a84ff22'; c.fill();
-        c.beginPath(); c.arc(x, y, 8, 0, Math.PI * 2); c.fillStyle = '#0a84ff'; c.fill();
-        c.lineWidth = 3; c.strokeStyle = '#fff'; c.stroke();
+      if (this.gps) this.renderGps();
+    }
+
+    renderGps() {
+      const c = this.ctx, C = this.colors, g = this.gps, col = this.gpsStale ? C.mut : C.gps;
+      const [x, y] = this.toScreen(g.p), r = Math.max(10, (g.acc || 0) * this.s);
+      c.globalAlpha = .14; c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1;   // vòng sai số
+      if (g.heading != null && !this.gpsStale) {                                                                           // hình quạt chỉ hướng
+        const a = (g.heading - 90) * Math.PI / 180, R = 38, grad = c.createRadialGradient(x, y, 6, x, y, R);
+        grad.addColorStop(0, col); grad.addColorStop(1, 'transparent');
+        c.globalAlpha = .55; c.fillStyle = grad;
+        c.beginPath(); c.moveTo(x, y); c.arc(x, y, R, a - Math.PI / 6, a + Math.PI / 6); c.closePath(); c.fill(); c.globalAlpha = 1;
       }
+      c.beginPath(); c.arc(x, y, 9, 0, Math.PI * 2); c.fillStyle = C.card; c.fill();                                      // viền trắng/be
+      c.beginPath(); c.arc(x, y, 6.5, 0, Math.PI * 2); c.fillStyle = col; c.fill();
     }
 
     renderRoute() {
       const c = this.ctx, C = this.colors, R = this.route;
-      // tuyến: đã đi (xám) → còn lại (xanh) → chặng kế tiếp (đậm)
-      const order = ['done', 'todo', 'next'];
+      // tuyến: còn lại (nhạt) → đã đi (xám) → chặng kế tiếp (đậm)
+      const order = ['todo', 'done', 'next'];   // phần đã đi nằm trên phần còn lại khi hai chặng đi trùng đường
       for (const st of order) {
         R.legs.forEach((leg, i) => {
           const ls = R.legState[i] || 'todo';
@@ -256,6 +307,7 @@
       const el = this.cv;
       const pos = e => { const r = el.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
       el.addEventListener('pointerdown', e => {
+        this.camAnim = null;
         el.setPointerCapture(e.pointerId);
         this.pointers.set(e.pointerId, pos(e));
         this.moved = false;
@@ -290,7 +342,7 @@
       };
       el.addEventListener('pointerup', up);
       el.addEventListener('pointercancel', up);
-      el.addEventListener('wheel', e => { e.preventDefault(); this.onUserMove && this.onUserMove(); const p = pos(e); this.zoomAt(p[0], p[1], Math.exp(-e.deltaY / 300)); }, {passive: false});
+      el.addEventListener('wheel', e => { e.preventDefault(); this.camAnim = null; this.onUserMove && this.onUserMove(); const p = pos(e); this.zoomAt(p[0], p[1], Math.exp(-e.deltaY / 300)); }, {passive: false});
     }
   }
 

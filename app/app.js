@@ -110,58 +110,134 @@
   let full = null, fullData = null;
 
   // ---------- Vị trí trực tiếp (GPS) ----------
-  // Tự bật khi bắt đầu giao; chấm xanh hiện trên mọi bản đồ.
-  // Bản đồ toàn màn hình: nút định vị bật/tắt "chế độ bám theo" – bản đồ luôn giữ vị trí của mình ở giữa.
-  // Kéo hoặc chụm bản đồ bằng tay thì tự thoát chế độ bám theo.
-  let gpsWatch = null, gpsPos = null, follow = false;
+  // GPS chỉ chạy khi đang giao hoặc khi bản đồ toàn màn hình đang bám theo; hết cần thì tắt ngay để đỡ tốn pin.
+  // Chấm xanh hiện trên mọi bản đồ: có hướng khi đang di chuyển, xám khi mất tín hiệu.
+  // Bản đồ toàn màn hình tự bám theo khi đang giao; kéo hoặc chụm bản đồ bằng tay thì thoát chế độ bám theo.
+  // Khi đang giao: khoảng cách còn lại tính theo đường đi thật, phần đã đi của chặng tô xám,
+  // lệch tuyến thì gợi ý tính lại, tới gần sảnh thì nút "Đã giao xong" sáng lên.
+  const OFF_ROUTE_M = 40, NEAR_M = 25, STALE_MS = 15000;
+  let gpsWatch = null, gpsPos = null, gpsAnchor = null, follow = false, staleTimer = null, wakeLock = null;
+  let tripRd = null, live = null, nearKey = null;   // dữ liệu tuyến chuyến đang giao; tình trạng so với tuyến
+  const offWatch = new VgpTrack.OffRoute(OFF_ROUTE_M, 10000);
   const allMaps = () => Object.values(mini).concat(full ? [full] : []);
   const fullOpen = () => $('full').classList.contains('on');
+  const needGps = () => !!S.trip || (follow && fullOpen());
+  const syncGps = () => needGps() ? startGps() : stopGps();
+
   function startGps() {
     if (gpsWatch !== null || !('geolocation' in navigator)) return;
-    gpsWatch = navigator.geolocation.watchPosition(p => {
-      gpsPos = {lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy};
-      allMaps().forEach(m => m.setGps(gpsPos));
-      if (follow && full && fullOpen()) full.centerOn(gpsPos.lat, gpsPos.lon, 1.2);
-      renderNextPill();
-    }, err => {
+    gpsWatch = navigator.geolocation.watchPosition(onFix, err => {
       // Mất tín hiệu tạm thời (giữa các tòa cao, trong hầm) thì cứ chờ, máy sẽ tự cập nhật lại.
       if (err.code !== 1) return;
-      navigator.geolocation.clearWatch(gpsWatch); gpsWatch = null; setFollow(false);
-      toast('Chưa cho phép định vị. Vào Cài đặt iPhone → Safari → Vị trí để bật.', 4000);
+      stopGps();
+      toast('Chưa cho phép định vị. Vào Cài đặt của máy → trình duyệt → Vị trí để bật.', 4000);
     }, {enableHighAccuracy: true, maximumAge: 2000});
+    staleTimer = setInterval(() => { if (gpsPos) allMaps().forEach(m => m.setGpsStale(Date.now() - gpsPos.t > STALE_MS)); }, 5000);
   }
   function stopGps() {
     if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
-    gpsWatch = null; gpsPos = null; setFollow(false);
+    clearInterval(staleTimer);
+    gpsWatch = staleTimer = null; gpsPos = gpsAnchor = null; follow = false; live = null; offWatch.reset();
+    $('fullLocate').classList.remove('follow');
     allMaps().forEach(m => m.setGps(null));
+    refreshTripUi();
+  }
+  function onFix(p) {
+    const c = p.coords, now = Date.now(), here = [c.latitude, c.longitude];
+    // Bỏ qua lần định vị kém hẳn ngay sau một lần tốt hơn (GPS thỉnh thoảng nhảy khi ở giữa các tòa cao)
+    if (gpsPos && c.accuracy > 60 && c.accuracy > gpsPos.acc && now - gpsPos.t < 10000) return;
+    // Hướng: lấy của máy khi đang chạy; không có thì suy ra từ quãng đã đi; đứng yên quá 8 giây thì bỏ hướng
+    let heading = gpsPos ? gpsPos.heading : null, moved = gpsPos ? gpsPos.moved : now;
+    if (c.heading != null && !isNaN(c.heading) && c.speed != null && c.speed > 0.8) { heading = c.heading; moved = now; gpsAnchor = here; }
+    else if (!gpsAnchor) gpsAnchor = here;
+    else if (VgpTrack.distance(gpsAnchor, here) >= 6) { heading = VgpTrack.bearing(gpsAnchor, here); moved = now; gpsAnchor = here; }
+    else if (now - moved > 8000) heading = null;
+    const first = !gpsPos;
+    gpsPos = {lat: c.latitude, lon: c.longitude, acc: c.accuracy, heading, moved, t: now};
+    allMaps().forEach(m => m.setGps(gpsPos));
+    if (follow && full && fullOpen()) full.centerOn(gpsPos.lat, gpsPos.lon, 1.2, !first);
+    updateLive(first);
   }
   function setFollow(on) {
     follow = on;
     $('fullLocate').classList.toggle('follow', on);
     if (on) {
-      startGps();
-      if (gpsPos && full) full.centerOn(gpsPos.lat, gpsPos.lon, 1.2);
+      if (gpsPos && full) full.centerOn(gpsPos.lat, gpsPos.lon, 1.2, true);
       else toast('Đang tìm vị trí…');
     }
+    syncGps(); updateWake();
   }
   $('fullLocate').onclick = () => setFollow(!follow);
+
+  // Giữ sáng màn hình khi xem bản đồ lúc đang giao (máy không hỗ trợ thì bỏ qua)
+  async function updateWake() {
+    const want = fullOpen() && !!S.trip;
+    try {
+      if (want && !wakeLock && 'wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      } else if (!want && wakeLock) { const w = wakeLock; wakeLock = null; await w.release(); }
+    } catch (e) { wakeLock = null; }
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') updateWake(); });
+
+  // So vị trí với chặng đang đi
+  function updateLive(first) {
+    live = null;
+    if (S.trip && gpsPos && tripRd) {
+      const st = tripState(), k = tripRd.legState.indexOf('next'), here = [gpsPos.lat, gpsPos.lon];
+      const target = B(st.next || S.trip.end), toTarget = VgpTrack.distance(here, [target.lat, target.lon]);
+      const pr = k >= 0 && tripRd.legs[k].length > 1 ? VgpTrack.project(tripRd.legs[k], here) : null;
+      const onRoute = !!pr && pr.dist <= OFF_ROUTE_M;
+      live = {
+        proj: onRoute ? pr : null,
+        remain: onRoute ? Math.max(0, pr.total - pr.along) : toTarget,   // trên tuyến: theo đường thật; ngoài tuyến: đường chim bay
+        toTarget, near: toTarget <= NEAR_M,
+        off: offWatch.update(pr ? pr.dist : 0, gpsPos.t) && toTarget > 60,   // xa tuyến liên tục, và chưa tới nơi
+      };
+    } else offWatch.reset();
+    refreshTripUi(first);
+  }
+  // Phần đã đi của chặng đang đi tô xám
+  function progressData() {
+    if (!tripRd || !live || !live.proj) return tripRd;
+    const k = tripRd.legState.indexOf('next'), sp = VgpTrack.split(tripRd.legs[k], live.proj);
+    const legs = tripRd.legs.slice(), state = tripRd.legState.slice();
+    legs.splice(k, 1, sp.done, sp.rest); state.splice(k, 1, 'done', 'next');
+    return Object.assign({}, tripRd, {legs, legState: state});
+  }
+  function refreshTripUi(first) {
+    if (!S.trip || !tripRd) { renderNextPill(); return; }
+    const st = tripState(), pd = progressData();
+    if ($('tDist')) $('tDist').textContent = fmtDist(live ? live.remain : (st.next ? dist(S.trip.mode, st.cur, st.next) : dist(S.trip.mode, st.cur, S.trip.end)));
+    $('bOff').style.display = live && live.off ? 'block' : 'none';
+    const key = (st.next || 'end') + ':' + S.trip.done.length, near = !!(live && live.near);
+    $('bDone').classList.toggle('near', near);
+    if (near && nearKey !== key) { nearKey = key; if (navigator.vibrate) navigator.vibrate(60); }
+    else if (!near && live && live.toTarget > NEAR_M * 2.5) nearKey = null;
+    fullData = pd;
+    if (mini.trip) { mini.trip.setRoute(pd); if (first) mini.trip.fitRoute(true); else mini.trip.keepGpsInView(); }
+    if (full && fullOpen()) full.setRoute(pd);
+    renderNextPill();
+  }
 
   // Ô nhỏ "Tiếp theo" ở bản đồ toàn màn hình (chỉ khi đang giao)
   function renderNextPill() {
     const pill = $('fullNext'), id = fullData && fullData.nextId;
     if (!id || !fullOpen()) { pill.classList.remove('on'); return; }
-    const b = B(id);
-    let d;
-    if (gpsPos) {
-      const kx = Math.cos(b.lat * Math.PI / 180);
-      d = Math.hypot((b.lat - gpsPos.lat) * 110540, (b.lon - gpsPos.lon) * kx * 111320);
-    } else d = fullData.nextLeg;
-    pill.innerHTML = `<span class="lbl">Tiếp theo</span><b>${esc(id)}</b>${d != null ? `<span class="d">${fmtDist(d)}</span>` : ''}`;
+    if (live && live.off) {
+      pill.innerHTML = '<span class="lbl">Lệch tuyến</span><b>Tính lại</b>'; pill.dataset.off = '1';
+    } else {
+      pill.dataset.off = '';
+      const d = live ? live.remain : fullData.nextLeg;
+      pill.innerHTML = `<span class="lbl">Tiếp theo</span><b>${esc(id)}</b>${d != null ? `<span class="d">${fmtDist(d)}</span>` : ''}`;
+    }
     pill.classList.add('on');
   }
   $('fullNext').onclick = () => {
+    if ($('fullNext').dataset.off) return replanFromGps();
     const id = fullData && fullData.nextId; if (!id || !full) return;
-    setFollow(false); full.centerOn(B(id).lat, B(id).lon, 1.2);
+    setFollow(false); full.centerOn(B(id).lat, B(id).lon, 1.2, true);
   };
   function routeData(mode, seq, nextId, doneSet) {
     const P = D.modes[mode].path, legs = [];
@@ -198,14 +274,20 @@
     if (!full) full = new VgpMap($('full'), {interactive: true, onUserMove: () => { if (follow) setFollow(false); }});
     full.setRoute(data);
     full.setGps(gpsPos);
+    history.pushState({full: 1}, '');
+    if (S.trip) setFollow(true);   // đang giao: tự bám theo vị trí của mình
     requestAnimationFrame(() => {
       full.resize();
       if (follow && gpsPos) full.centerOn(gpsPos.lat, gpsPos.lon, 1.2); else full.fitRoute();
     });
-    history.pushState({full: 1}, '');
+    updateWake();
     renderNextPill();
   }
-  function closeFull() { $('full').classList.remove('on'); $('fullNext').classList.remove('on'); }
+  function closeFull() {
+    $('full').classList.remove('on'); $('fullNext').classList.remove('on');
+    follow = false; $('fullLocate').classList.remove('follow');
+    syncGps(); updateWake();
+  }
   $('fullClose').onclick = () => { closeFull(); if (history.state && history.state.full) history.back(); };
   window.addEventListener('popstate', closeFull);
 
@@ -369,7 +451,7 @@
     S.trip = {mode: S.route.mode, order: S.route.order.slice(), done: [], started: Date.now(), plan: S.route.cost,
       start: S.route.start, end: S.route.end};
     LS.set('trip', S.trip); renderGo(); document.querySelector('main').scrollTop = 0;
-    startGps();
+    syncGps();
   };
 
   function tripState() {
@@ -388,12 +470,12 @@
     if (st.next) {
       const b = B(st.next);
       $('tNext').innerHTML = `<div class="lbl">Tòa tiếp theo</div><div class="big">${esc(st.next)}</div>
-        <div class="sub">${esc(b.zone)} · ${fmtDist(dist(T.mode, st.cur, st.next))}</div>
+        <div class="sub">${esc(b.zone)} · <span id="tDist">${fmtDist(dist(T.mode, st.cur, st.next))}</span></div>
         ${b.note ? `<div class="note">${esc(b.note)}</div>` : ''}`;
       $('bDone').textContent = 'Đã giao xong';
     } else {
       $('tNext').innerHTML = `<div class="lbl">Đã giao hết ${n} tòa</div><div class="big">Về ${esc(T.end)}</div>
-        <div class="sub">${fmtDist(dist(T.mode, st.cur, T.end))}</div>`;
+        <div class="sub"><span id="tDist">${fmtDist(dist(T.mode, st.cur, T.end))}</span></div>`;
       $('bDone').textContent = 'Kết thúc chuyến';
     }
     $('bUndo').style.display = k ? '' : 'none';
@@ -406,7 +488,11 @@
     }).join('');
     const rd = routeData(T.mode, seq, st.next, st.done);
     rd.nextId = st.next; rd.nextLeg = st.next ? dist(T.mode, st.cur, st.next) : null;
+    const li = rd.legState.indexOf('next');
+    rd.focus = li >= 0 ? rd.legs[li] : null;   // bản đồ nhỏ chỉ hiện chặng đang đi
+    tripRd = rd;
     showMini('trip', 'mapTrip', rd);
+    updateLive(true);
   }
   $('bDone').onclick = () => {
     const st = tripState();
@@ -427,25 +513,30 @@
       <button class="btn ghost" id="mNo">Thôi</button>`, el => {
       el.querySelector('#mNo').onclick = closeSheet;
       el.querySelector('#rLast').onclick = () => { closeSheet(); replanFrom(st.cur); };
-      el.querySelector('#rGps').onclick = () => {
-        closeSheet();
-        if (!('geolocation' in navigator)) return toast('Máy không hỗ trợ định vị');
-        toast('Đang tìm vị trí…');
-        navigator.geolocation.getCurrentPosition(p => {
-          const {latitude: la, longitude: lo} = p.coords, kx = Math.cos(la * Math.PI / 180);
-          let best = D.depot, bd = Infinity;
-          D.buildings.forEach(b => { const d = Math.hypot(b.lat - la, (b.lon - lo) * kx); if (d < bd) { bd = d; best = b.id; } });
-          replanFrom(best);
-        }, () => toast('Không lấy được vị trí. Hãy cho phép định vị trong Cài đặt iPhone.', 3500),
-        {enableHighAccuracy: true, timeout: 10000, maximumAge: 10000});
-      };
+      el.querySelector('#rGps').onclick = () => { closeSheet(); replanFromGps(); };
     });
   };
+  // Tính lại từ tòa gần chỗ đang đứng nhất
+  function replanFromGps() {
+    if (!('geolocation' in navigator)) return toast('Máy không hỗ trợ định vị');
+    const go = (la, lo) => {
+      const kx = Math.cos(la * Math.PI / 180);
+      let best = D.depot, bd = Infinity;
+      D.buildings.forEach(b => { const d = Math.hypot(b.lat - la, (b.lon - lo) * kx); if (d < bd) { bd = d; best = b.id; } });
+      replanFrom(best);
+    };
+    if (gpsPos && Date.now() - gpsPos.t < 30000) return go(gpsPos.lat, gpsPos.lon);
+    toast('Đang tìm vị trí…');
+    navigator.geolocation.getCurrentPosition(p => go(p.coords.latitude, p.coords.longitude),
+      () => toast('Không lấy được vị trí. Hãy cho phép định vị trong Cài đặt của máy.', 3500),
+      {enableHighAccuracy: true, timeout: 10000, maximumAge: 10000});
+  }
+  $('bOff').onclick = replanFromGps;
   async function replanFrom(startId) {
     const st = tripState(), before = remaining(st);
     const r = await solve(st.T.mode, startId, st.T.end, st.left);
     S.trip.order = [...S.trip.done, ...r.order];
-    LS.set('trip', S.trip); renderGo();
+    LS.set('trip', S.trip); offWatch.reset(); renderGo();
     const after = remaining(tripState());
     toast(after < before - 5 ? `Đã sắp xếp lại · ngắn hơn ${fmtDist(before - after)}` : 'Đã sắp xếp lại đường đi');
   }
@@ -455,7 +546,8 @@
       mins: Math.round((Date.now() - T.started) / 60000)});
     S.history = S.history.slice(0, 20); LS.set('history', S.history);
     S.trip = null; LS.del('trip');
-    stopGps();
+    tripRd = live = null; nearKey = null; $('bDone').classList.remove('near'); $('bOff').style.display = 'none';
+    syncGps(); updateWake();
   }
   function endTrip() {
     const left = S.trip.order.length - S.trip.done.length;
@@ -573,7 +665,7 @@
     if (S.trip && ![S.trip.start, S.trip.end, ...S.trip.order].every(id => id in IDX)) { S.trip = null; LS.del('trip'); }
     renderPick();
     $('tripDot').classList.toggle('on', !!S.trip);
-    if (S.trip) { $('tripDot').textContent = S.trip.order.length - S.trip.done.length || '✓'; show('s-go'); startGps(); }
+    if (S.trip) { $('tripDot').textContent = S.trip.order.length - S.trip.done.length || '✓'; show('s-go'); syncGps(); }
     if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
     setTimeout(checkUpdate, 1500);
   }
