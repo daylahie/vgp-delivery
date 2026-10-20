@@ -17,6 +17,9 @@
   };
 
   let D = null, IDX = {}, DEPOT = 0;
+  // Cổng ra vào hầm xe (dùng chung giữa các tòa). Tắt "tự chọn" thì chỉ dùng điểm xuất phát mặc định.
+  const gateList = () => S.settings.autoGate && D.gates ? D.gates : [D.depot];
+  const gateText = (a, b) => a === b ? `Ra và về ${a}` : `Ra ${a} · về ${b}`;
   const S = {
     mode: LS.get('mode', 'moto'),
     sel: new Set(LS.get('sel', [])),
@@ -60,21 +63,36 @@
   const pending = new Map();
   try {
     worker = new Worker('solver.worker.js');
-    worker.onmessage = e => { const p = pending.get(e.data.id); if (p) { pending.delete(e.data.id); e.data.ok ? p.res(e.data) : p.rej(new Error(e.data.error)); } };
+    worker.onmessage = e => {
+      const p = pending.get(e.data.id); if (!p) return;
+      pending.delete(e.data.id);
+      e.data.ok ? p.res(Object.assign(e.data.result, {ms: e.data.ms})) : p.rej(new Error(e.data.error));
+    };
     worker.onerror = () => { worker = null; };
   } catch (e) { worker = null; }
-  function solve(mode, start, end, stops) {
-    const dm = D.modes[mode].dist, s = IDX[start], t = IDX[end], st = stops.map(i => IDX[i]);
-    const out = r => ({order: r.order.map(i => D.buildings[i].id), cost: r.cost, exact: r.exact, ms: r.ms});
+  function runSolver(op, a) {
     if (!worker) {
-      const t0 = Date.now(), r = window.VGPSolver.solve(dm, s, t, st);
-      return Promise.resolve(out(Object.assign(r, {ms: Date.now() - t0})));
+      const t0 = Date.now(), S = window.VGPSolver;
+      const r = op === 'gates' ? S.solveGates(a.dist, a.gates, a.stops) : S.solveRoute(a.dist, a.start, a.end, a.stops);
+      return Promise.resolve(Object.assign(r, {ms: Date.now() - t0}));
     }
     return new Promise((res, rej) => {
       const id = ++reqId;
-      pending.set(id, {res: r => res(out(r)), rej});
-      worker.postMessage({id, dist: dm, start: s, end: t, stops: st});
+      pending.set(id, {res, rej});
+      worker.postMessage(Object.assign({id, op}, a));
     });
+  }
+  const ixs = ids => ids.map(i => IDX[i]), idOf = i => D.buildings[i].id;
+  // Một cặp cổng cố định. Điểm giao trùng cổng vẫn nằm trong thứ tự (giao ngay tại cổng).
+  async function solve(mode, start, end, stops) {
+    const r = await runSolver('route', {dist: D.modes[mode].dist, start: IDX[start], end: IDX[end], stops: ixs(stops)});
+    return {order: r.order.map(idOf), cost: r.cost, exact: r.exact, ms: r.ms};
+  }
+  // Các tòa dùng chung hầm: thử mọi cặp (cổng đi, cổng về), chọn cặp tiện nhất.
+  async function solveGates(mode, stops) {
+    const r = await runSolver('gates', {dist: D.modes[mode].dist, gates: ixs(gateList()), stops: ixs(stops)});
+    const out = a => ({start: idOf(a.start), end: idOf(a.end), cost: a.cost, exact: a.exact, order: a.order.map(idOf)});
+    return {alts: r.alts.map(out), pick: out(r.pick), ms: r.ms};
   }
 
   // ---------- Điều hướng ----------
@@ -152,11 +170,14 @@
       legs.push(enc ? decode(enc) : [[B(seq[i]).lat, B(seq[i]).lon], [B(seq[i + 1]).lat, B(seq[i + 1]).lon]]);
     }
     const nextIdx = nextId === undefined ? -1 : (nextId ? seq.indexOf(nextId, 1) : seq.length - 1);
+    const stops = seq.slice(0, -1).map((id, i) => ({lat: B(id).lat, lon: B(id).lon, id: i ? id : '', label: String(i),
+      kind: i === 0 ? 'depot' : doneSet && doneSet.has(id) ? 'done' : id === nextId ? 'next' : 'stop'}));
+    const end = seq[seq.length - 1];
+    if (end !== seq[0]) stops.push({lat: B(end).lat, lon: B(end).lon, id: '', label: '', kind: 'depot'});   // cổng về khác cổng đi
     return {
       legs,
       legState: nextIdx < 0 ? [] : legs.map((_, i) => i + 1 < nextIdx ? 'done' : i + 1 === nextIdx ? 'next' : 'todo'),
-      stops: seq.slice(0, -1).map((id, i) => ({lat: B(id).lat, lon: B(id).lon, id: i ? id : '', label: String(i),
-        kind: i === 0 ? 'depot' : doneSet && doneSet.has(id) ? 'done' : id === nextId ? 'next' : 'stop'})),
+      stops,
     };
   }
   function showMini(key, elId, data) {
@@ -273,8 +294,8 @@
 
   async function computeRoute(mode, ids) {
     try {
-      const r = await solve(mode, D.depot, D.depot, ids);
-      S.route = {mode, sel: ids, order: r.order, cost: r.cost, exact: r.exact, ms: r.ms};
+      const r = await solveGates(mode, ids), p = r.pick;
+      S.route = {mode, sel: ids, start: p.start, end: p.end, order: p.order, cost: p.cost, exact: p.exact, ms: r.ms, alts: r.alts};
       LS.set('route', S.route);
     } catch (err) { toast('Không tính được: ' + err.message); }
   }
@@ -313,9 +334,11 @@
 
   function renderPlan() {
     const R = S.route;
-    if (R.order.some(id => !(id in IDX))) { S.route = null; LS.del('route'); return renderGo(); }
+    if (![R.start, R.end, ...R.order].every(id => id in IDX)) { S.route = null; LS.del('route'); return renderGo(); }
     document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === R.mode));
-    const n = R.order.length, seq = [D.depot, ...R.order, D.depot];
+    const n = R.order.length, seq = [R.start, ...R.order, R.end];
+    $('gateRow').style.display = R.alts && R.alts.length > 1 ? 'flex' : 'none';
+    $('gateTxt').textContent = gateText(R.start, R.end);
     $('pDist').textContent = fmtDist(R.cost);
     $('pMeta').textContent = `· khoảng ${fmtMin(travelMin(R.cost, R.mode) + n * S.settings.stopMin)} · ${n} tòa`;
     $('planList').innerHTML = seq.map((id, i) => stopRow(id, i, i === seq.length - 1, i ? dist(R.mode, seq[i - 1], id) : null)).join('');
@@ -328,20 +351,35 @@
     await computeRoute(S.mode, S.route.sel);
     renderPlan();
   });
+  $('bGate').onclick = () => {
+    const R = S.route, alts = R.alts.slice().sort((a, b) => a.cost - b.cost);
+    sheet(`<h3>Đổi cổng ra vào hầm</h3><p class="mut">Các tòa dùng chung hầm xe nên không tính đoạn đi giữa hai cổng.</p>` +
+      alts.map((a, i) => `<button class="opt${a.start === R.start && a.end === R.end ? ' on' : ''}" data-i="${i}">
+        <span>${esc(gateText(a.start, a.end))}</span><span class="mut">${i === 0 ? 'ngắn nhất · ' : ''}${fmtDist(a.cost)}</span></button>`).join('') +
+      '<button class="btn ghost" id="mNo" style="margin-top:6px">Đóng</button>', el => {
+      el.querySelector('#mNo').onclick = closeSheet;
+      el.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+        const a = alts[+b.dataset.i];
+        Object.assign(S.route, {start: a.start, end: a.end, order: a.order, cost: a.cost, exact: a.exact});
+        LS.set('route', S.route); closeSheet(); renderPlan();
+      });
+    });
+  };
   $('bStart').onclick = () => {
-    S.trip = {mode: S.route.mode, order: S.route.order.slice(), done: [], started: Date.now(), plan: S.route.cost};
+    S.trip = {mode: S.route.mode, order: S.route.order.slice(), done: [], started: Date.now(), plan: S.route.cost,
+      start: S.route.start, end: S.route.end};
     LS.set('trip', S.trip); renderGo(); document.querySelector('main').scrollTop = 0;
     startGps();
   };
 
   function tripState() {
     const T = S.trip, done = new Set(T.done), left = T.order.filter(id => !done.has(id));
-    return {T, done, left, next: left[0] || null, cur: T.done.length ? T.done[T.done.length - 1] : D.depot};
+    return {T, done, left, next: left[0] || null, cur: T.done.length ? T.done[T.done.length - 1] : T.start};
   }
   function remaining(st) {
     let d = 0, p = st.cur;
     for (const id of st.left) { d += dist(st.T.mode, p, id); p = id; }
-    return d + dist(st.T.mode, p, D.depot);
+    return d + dist(st.T.mode, p, st.T.end);
   }
   function renderTrip() {
     const st = tripState(), T = st.T, n = T.order.length, k = T.done.length;
@@ -354,13 +392,13 @@
         ${b.note ? `<div class="note">${esc(b.note)}</div>` : ''}`;
       $('bDone').textContent = 'Đã giao xong';
     } else {
-      $('tNext').innerHTML = `<div class="lbl">Đã giao hết ${n} tòa</div><div class="big">Về ${esc(D.depot)}</div>
-        <div class="sub">${fmtDist(dist(T.mode, st.cur, D.depot))}</div>`;
+      $('tNext').innerHTML = `<div class="lbl">Đã giao hết ${n} tòa</div><div class="big">Về ${esc(T.end)}</div>
+        <div class="sub">${fmtDist(dist(T.mode, st.cur, T.end))}</div>`;
       $('bDone').textContent = 'Kết thúc chuyến';
     }
     $('bUndo').style.display = k ? '' : 'none';
     $('bReplan').style.display = st.left.length > 1 ? '' : 'none';
-    const seq = [D.depot, ...T.order, D.depot];
+    const seq = [T.start, ...T.order, T.end];
     $('tripList').innerHTML = seq.map((id, i) => {
       const last = i === seq.length - 1, isDone = i > 0 && !last && st.done.has(id);
       const cls = isDone ? 'done' : (id === st.next && i > 0 && !last) || (!st.next && last) ? 'cur' : '';
@@ -405,8 +443,8 @@
   };
   async function replanFrom(startId) {
     const st = tripState(), before = remaining(st);
-    const r = await solve(st.T.mode, startId, D.depot, st.left.filter(id => id !== startId));
-    S.trip.order = [...S.trip.done, ...(st.left.includes(startId) ? [startId] : []), ...r.order];
+    const r = await solve(st.T.mode, startId, st.T.end, st.left);
+    S.trip.order = [...S.trip.done, ...r.order];
     LS.set('trip', S.trip); renderGo();
     const after = remaining(tripState());
     toast(after < before - 5 ? `Đã sắp xếp lại · ngắn hơn ${fmtDist(before - after)}` : 'Đã sắp xếp lại đường đi');
@@ -431,6 +469,9 @@
     $('spMoto').value = S.settings.speed.moto;
     $('spWalk').value = S.settings.speed.walk;
     $('stopMin').value = S.settings.stopMin;
+    $('gateSet').style.display = D.gates && D.gates.length > 1 ? '' : 'none';
+    $('gateOnly').textContent = 'Chỉ ' + D.depot;
+    $('gateSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', (b.dataset.g === '1') === S.settings.autoGate));
     $('presetList').innerHTML = S.presets.length ? S.presets.map((p, i) => `<div class="stop"><div style="flex:1;min-width:0">
       <div class="id">${esc(p.name)}</div><div class="z" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.ids.join(', '))}</div></div>
       <button class="link" data-d="${i}" style="color:var(--bad)">Xoá</button></div>`).join('')
@@ -455,6 +496,11 @@
       set(v); LS.set('settings', S.settings); toast('Đã lưu');
     });
   }
+  $('gateSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    S.settings.autoGate = b.dataset.g === '1'; LS.set('settings', S.settings); renderSettings();
+    toast('Áp dụng từ lần tính lộ trình sau');
+  });
   bindNum('spMoto', v => S.settings.speed.moto = Math.max(1, v));
   bindNum('spWalk', v => S.settings.speed.walk = Math.max(0.5, v));
   bindNum('stopMin', v => S.settings.stopMin = v);
@@ -521,9 +567,10 @@
     D.buildings.forEach((b, i) => IDX[b.id] = i);
     DEPOT = IDX[D.depot];
     prepareBase(D.map);
-    S.settings = Object.assign({speed: Object.assign({}, D.defaults.speed_kmh), stopMin: D.defaults.stop_min}, S.settings || {});
+    S.settings = Object.assign({speed: Object.assign({}, D.defaults.speed_kmh), stopMin: D.defaults.stop_min, autoGate: true}, S.settings || {});
     [...S.sel].forEach(id => { if (!(id in IDX) || id === D.depot) S.sel.delete(id); });
-    if (S.trip && S.trip.order.some(id => !(id in IDX))) { S.trip = null; LS.del('trip'); }
+    for (const o of [S.route, S.trip]) if (o) { o.start = o.start || D.depot; o.end = o.end || D.depot; }   // lộ trình lưu từ bản cũ
+    if (S.trip && ![S.trip.start, S.trip.end, ...S.trip.order].every(id => id in IDX)) { S.trip = null; LS.del('trip'); }
     renderPick();
     $('tripDot').classList.toggle('on', !!S.trip);
     if (S.trip) { $('tripDot').textContent = S.trip.order.length - S.trip.done.length || '✓'; show('s-go'); startGps(); }

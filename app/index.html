@@ -147,6 +147,13 @@ input:focus{border-color:var(--acc)}
 .stop.done .id{color:var(--mut);text-decoration:line-through}
 .stop.cur{background:var(--acc-soft);margin:0 -18px;padding:12px 18px}
 
+.gate{display:flex;align-items:center;justify-content:space-between;margin:-6px 2px 10px;color:var(--mut);font-size:14px}
+.gate .link{padding:6px 2px}
+#modal .opt{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:14px 16px;margin-bottom:8px;
+  border:1px solid var(--line);border-radius:12px;font-weight:600;text-align:left}
+#modal .opt .mut{font-weight:500;font-size:14px}
+#modal .opt.on{border-color:var(--ink);background:var(--soft)}
+
 /* đang giao */
 .prog{display:flex;align-items:center;gap:12px;margin:6px 2px 14px}
 .prog .track{flex:1;height:4px;background:var(--soft);border-radius:2px;overflow:hidden}
@@ -224,6 +231,7 @@ details[open] summary:after{transform:rotate(45deg)}
         <h1>Lộ trình</h1>
         <div class="seg" id="modeSeg"><button data-m="moto">Xe máy</button><button data-m="walk">Đi bộ</button></div>
         <div class="sum" style="margin-top:16px"><b id="pDist"></b><span id="pMeta"></span></div>
+        <div class="gate" id="gateRow"><span id="gateTxt"></span><button class="link" id="bGate">Đổi cổng</button></div>
         <button class="btn" id="bStart">Bắt đầu giao</button>
         <div class="mapcard" id="mapPlan"></div>
         <div class="card" id="planList"></div>
@@ -248,6 +256,8 @@ details[open] summary:after{transform:rotate(45deg)}
         <div class="set"><label for="spMoto">Tốc độ xe máy <span class="mut small">km/h</span></label><input type="number" id="spMoto" min="3" max="60" step="1" inputmode="decimal"></div>
         <div class="set"><label for="spWalk">Tốc độ đi bộ <span class="mut small">km/h</span></label><input type="number" id="spWalk" min="1" max="10" step="0.5" inputmode="decimal"></div>
         <div class="set"><label for="stopMin">Dừng mỗi sảnh <span class="mut small">phút</span></label><input type="number" id="stopMin" min="0" max="30" step="0.5" inputmode="decimal"></div>
+        <div class="set" id="gateSet"><label>Cổng ra vào hầm</label>
+          <div class="seg" id="gateSeg" style="width:190px"><button data-g="1">Tự chọn</button><button data-g="0" id="gateOnly"></button></div></div>
       </div>
       <div class="sec">Nhóm tòa đã lưu</div>
       <div class="card" id="presetList"></div>
